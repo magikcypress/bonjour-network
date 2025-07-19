@@ -1,0 +1,27 @@
+{
+    "name": "wifi-tracker",
+    "version": "1.0.0",
+    "description": "Application pour scanner et gérer les réseaux WiFi dans un appartement",
+    "main": "server/index.js",
+    "scripts": {
+        "dev": "concurrently \"npm run server\" \"npm run client\"",
+        "server": "cd server && npm run dev",
+        "client": "cd client && npm start",
+        "build": "cd client && npm run build",
+        "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+    },
+    "keywords": [
+        "wifi",
+        "scanner",
+        "network",
+        "tracker"
+    ],
+    "author": "magikcypress",
+    "license": "MIT",
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    },
+    "dependencies": {
+        "socket.io-client": "^4.8.1"
+    }
+}
