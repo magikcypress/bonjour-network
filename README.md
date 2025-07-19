@@ -551,15 +551,6 @@ L'application identifie automatiquement les fabricants d'appareils connectés :
 - **Scan arping** - Découverte ARP active (si disponible)
 - **Identification Mistral AI** - Identification des fabricants
 
-### **Appareils identifiés**
-
-- **Samsung Electronics** (Smart TV) - 80% confiance
-- **Apple Inc.** (Mobile Device) - 85% confiance  
-- **Raspberry Pi Foundation** (Single Board Computer) - 95% confiance
-- **Synology Inc.** (Network Attached Storage) - 90% confiance
-- **LG Electronics** (Smart Device) - 75% confiance
-- **Xiaomi Corporation** (IoT Device) - 70% confiance
-
 ### **Interface utilisateur avancée**
 
 - ✅ **Progression visuelle** : Étapes du scan affichées en temps réel
