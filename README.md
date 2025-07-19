@@ -76,7 +76,7 @@
 ### **1. Cloner le projet**
 
 ```bash
-git clone https://github.com/votre-username/wifi-tracker.git
+git clone https://github.com/magikcypress/wifi-tracker.git
 cd wifi-tracker
 ```
 
@@ -303,9 +303,9 @@ Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus
 
 ### **Aide et support**
 
-- **Issues GitHub** : [Signaler un bug](https://github.com/votre-username/wifi-tracker/issues)
-- **Discussions** : [Forum communautaire](https://github.com/votre-username/wifi-tracker/discussions)
-- **Documentation** : [Wiki du projet](https://github.com/votre-username/wifi-tracker/wiki)
+- **Issues GitHub** : [Signaler un bug](https://github.com/magikcypress/wifi-tracker/issues)
+- **Discussions** : [Forum communautaire](https://github.com/magikcypress/wifi-tracker/discussions)
+- **Documentation** : [Wiki du projet](https://github.com/magikcypress/wifi-tracker/wiki)
 
 ---
 
