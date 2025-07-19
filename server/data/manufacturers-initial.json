@@ -1,0 +1,128 @@
+{
+    "000C29": {
+        "manufacturer": "VMware, Inc.",
+        "deviceType": "Virtual Machine",
+        "confidence": 0.95,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "00037F": {
+        "manufacturer": "Apple Inc.",
+        "deviceType": "iPhone/iPad",
+        "confidence": 0.95,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "001A11": {
+        "manufacturer": "Google Inc.",
+        "deviceType": "Android Device",
+        "confidence": 0.9,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "B827EB": {
+        "manufacturer": "Raspberry Pi Foundation",
+        "deviceType": "Single Board Computer",
+        "confidence": 0.95,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "48E15C": {
+        "manufacturer": "Samsung Electronics",
+        "deviceType": "Smart TV/Mobile",
+        "confidence": 0.9,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "6CBFB5": {
+        "manufacturer": "Synology Inc.",
+        "deviceType": "Network Attached Storage",
+        "confidence": 0.9,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "BCD074": {
+        "manufacturer": "Xiaomi Corporation",
+        "deviceType": "IoT Device",
+        "confidence": 0.8,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "96E840": {
+        "manufacturer": "LG Electronics",
+        "deviceType": "Smart TV/Appliance",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "001122": {
+        "manufacturer": "Cisco Systems",
+        "deviceType": "Network Equipment",
+        "confidence": 0.9,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "0023DF": {
+        "manufacturer": "Netgear",
+        "deviceType": "Router/Network Device",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "001A92": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "001B63": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "001C7F": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "001D60": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "001E8C": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "001F3A": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "002354": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "002354": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "002354": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "002354": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    },
+    "002354": {
+        "manufacturer": "ASUSTeK Computer",
+        "deviceType": "Computer/Laptop",
+        "confidence": 0.85,
+        "addedAt": "2025-07-19T15:00:00.000Z"
+    }
+}

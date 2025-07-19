@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  wifi-tracker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wifi-tracker
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+      - CORS_ORIGIN=http://localhost:3001
+      - REQUEST_TIMEOUT=30000
+      - SCAN_TIMEOUT=10000
+      - WIFI_SCAN_INTERVAL=30000
+      - DEVICE_SCAN_INTERVAL=60000
+      - LOG_LEVEL=info
+    # Optionnel: Ajouter votre clé Mistral AI
+    # - MISTRAL_AI_KEY=your-mistral-api-key-here
+    volumes:
+      # Montage des logs pour persistance
+      - ./logs:/app/logs
+      # Montage optionnel pour les données persistantes
+      - ./data:/app/data
+    restart: unless-stopped
+    # Accès aux interfaces réseau pour le scan WiFi
+    network_mode: host
+    # Privilèges nécessaires pour le scan réseau
+    privileged: true
+    # Sécurité : utilisation d'un utilisateur non-root
+    user: "1001:1001"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5001/api/networks"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Service optionnel pour le développement
+  wifi-tracker-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wifi-tracker-dev
+    ports:
+      - "5002:5001"
+    environment:
+      - NODE_ENV=development
+      - PORT=5001
+      - CORS_ORIGIN=http://localhost:3001
+      - LOG_LEVEL=debug
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      # Montage du code source pour le développement
+      - ./server:/app/server
+      - ./client:/app/client
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    user: "1001:1001"
+    profiles:
+      - dev 
