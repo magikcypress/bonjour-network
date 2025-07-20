@@ -23,12 +23,12 @@ class CommandValidator {
         'arp': ['-a', '-n'],
         'netstat': ['-rn', '-an'],
         'ifconfig': ['en0', 'en1', 'lo0'],
-        'ping': ['-c', '1', '-W', '1000'],
+        'ping': ['-c', '1', '-W', '1000', '500'],
         'nmap': ['-sn', '--max-retries', '1', '--host-timeout', '1s'],
-        'dns-sd': ['-B', '_http._tcp', '_https._tcp', '_ssh._tcp', '_ftp._tcp', '_smb._tcp', 'local'],
+        'dns-sd': ['-B', '_http._tcp', '_https._tcp', '_ssh._tcp', '_ftp._tcp', '_smb._tcp', '_airplay._tcp', 'local'],
         'airport': ['-s'],
         'system_profiler': ['SPAirPortDataType'],
-        'networksetup': ['-listallnetworkservices', '-getinfo'],
+        'networksetup': ['-listallnetworkservices', '-getinfo', 'Wi-Fi', 'AirPort', 'Ethernet'],
         'arping': ['-I', 'en0'],
         'scutil': ['--nwi'],
         'which': ['nmap', 'arping'],
@@ -61,7 +61,9 @@ class CommandValidator {
             const validParams = this.allowedParams[baseCommand];
 
             for (const param of params) {
-                if (!validParams.includes(param) && !this.isValidIpOrMac(param)) {
+                if (!validParams.includes(param) &&
+                    !this.isValidIpOrMac(param) &&
+                    !(baseCommand === 'networksetup' && this.isValidNetworkService(param))) {
                     console.warn(`🚫 Paramètre non autorisé pour ${baseCommand}: ${param}`);
                     return false;
                 }
@@ -98,6 +100,25 @@ class CommandValidator {
      */
     static isValidIpOrMac(value) {
         return this.isValidIp(value) || this.isValidMac(value);
+    }
+
+    /**
+     * Valide un nom de service réseau
+     * @param {string} serviceName - Le nom du service à valider
+     * @returns {boolean} - True si le nom de service est valide
+     */
+    static isValidNetworkService(serviceName) {
+        if (!serviceName || typeof serviceName !== 'string') {
+            return false;
+        }
+
+        // Noms de services autorisés pour networksetup
+        const allowedServices = ['Wi-Fi', 'AirPort', 'Ethernet', 'Thunderbolt Ethernet'];
+
+        // Vérifier si le service est dans la liste autorisée
+        return allowedServices.some(service =>
+            serviceName.includes(service) || serviceName === service
+        );
     }
 
     /**

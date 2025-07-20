@@ -1,65 +1,145 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useDataManager } from './hooks/useDataManager';
 import Navigation from './components/Navigation';
 import NetworkList from './components/NetworkList';
 import DeviceList from './components/DeviceList';
+import Footer from './components/Footer';
+// Import supprimé car validateConnectivity n'est plus utilisé
 
-const API_BASE_URL = 'http://localhost:5001/api';
-
+/**
+ * Composant principal de l'application WiFi Tracker
+ * Utilise les services et hooks refactorisés pour une gestion cohérente des données
+ */
 function App() {
     const [activeTab, setActiveTab] = useState('networks');
-    const [networkCount, setNetworkCount] = useState(0);
-    const [deviceCount, setDeviceCount] = useState(0);
 
-    useEffect(() => {
-        // Charger les compteurs initiaux
-        loadCounts();
+    // Utiliser le hook de gestion des données
+    const {
+        data,
+        loading,
+        error,
+        scanProgress,
+        realTimeScan,
+        connectivity: dataManagerConnectivity,
+        loadNetworks,
+        loadDevices,
+        startScan,
+        cancelScan,
+        startRealTimeScan,
+        stopRealTimeScan
+    } = useDataManager(activeTab);
 
-        // Mise à jour automatique désactivée pour éviter les scans en boucle
-        // const interval = setInterval(loadCounts, 30000);
-        // return () => clearInterval(interval);
-    }, []);
+    // Gestionnaire de changement d'onglet
+    const handleTabChange = (tabId) => {
+        console.log('🔄 Changement d\'onglet vers:', tabId);
+        console.log('📊 État connectivité:', dataManagerConnectivity);
 
-    const loadCounts = async () => {
+        // Permettre le changement d'onglet même si la connectivité n'est pas parfaite
+        // Seulement empêcher si vraiment aucune connexion
+        if (!dataManagerConnectivity.api && !dataManagerConnectivity.socket) {
+            console.warn('⚠️ Aucune connexion disponible, changement d\'onglet ignoré');
+            return;
+        }
+
+        setActiveTab(tabId);
+        console.log('✅ Onglet changé vers:', tabId);
+    };
+
+    // Gestionnaire de scan terminé
+    const handleScanComplete = async () => {
         try {
-            // Charger le nombre de réseaux
-            const networksResponse = await axios.get(`${API_BASE_URL}/networks`);
-            setNetworkCount(networksResponse.data.length);
-
-            // Charger le nombre d'appareils
-            const devicesResponse = await axios.get(`${API_BASE_URL}/devices`);
-            setDeviceCount(devicesResponse.data.length);
+            // Recharger les données après le scan
+            await loadNetworks();
+            if (activeTab === 'devices') {
+                await loadDevices('fast');
+            }
         } catch (error) {
-            console.error('Erreur lors du chargement des compteurs:', error);
+            console.error('❌ Erreur lors du rechargement après scan:', error);
         }
     };
 
-    const handleTabChange = (tabId) => {
-        setActiveTab(tabId);
+    // Gestionnaire de démarrage de scan
+    const handleStartScan = async (mode = 'fast') => {
+        try {
+            if (activeTab === 'networks') {
+                // Pour les réseaux, utiliser loadNetworks (API REST)
+                console.log('🔍 Scan des réseaux via API REST...');
+                await loadNetworks();
+            } else {
+                // Pour les devices, utiliser startScan (WebSocket)
+                console.log('🔍 Scan des devices via WebSocket...');
+                await startScan(mode);
+            }
+        } catch (error) {
+            console.error('❌ Erreur lors du démarrage du scan:', error);
+        }
     };
 
-    const handleScanComplete = () => {
-        // Recharger les données après le scan
-        loadCounts();
+    // Gestionnaire d'annulation de scan
+    const handleCancelScan = async () => {
+        try {
+            await cancelScan();
+        } catch (error) {
+            console.error('❌ Erreur lors de l\'annulation du scan:', error);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-            <div className="container mx-auto px-4 py-8">
-                {/* Navigation avec onglets */}
-                <Navigation
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                    networkCount={networkCount}
-                    deviceCount={deviceCount}
-                />
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+            <div className="flex-1">
+                <div className="container mx-auto px-4 py-8">
+                    {/* Indicateur de connectivité */}
+                    {!dataManagerConnectivity.api && (
+                        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                            <div className="flex items-center">
+                                <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                                <span className="text-sm font-medium">
+                                    Serveur backend non accessible
+                                </span>
+                            </div>
+                        </div>
+                    )}
 
-                {/* Contenu des onglets */}
-                <div className="space-y-6">
-                    {activeTab === 'networks' && <NetworkList />}
-                    {activeTab === 'devices' && <DeviceList onScanComplete={handleScanComplete} />}
+                    {/* Navigation avec onglets */}
+                    <Navigation
+                        activeTab={activeTab}
+                        onTabChange={handleTabChange}
+                        networkCount={data.networkCount}
+                        deviceCount={data.deviceCount}
+                        connectivity={dataManagerConnectivity}
+                    />
+
+                    {/* Contenu des onglets */}
+                    <div className="space-y-6">
+                        {activeTab === 'networks' && (
+                            <NetworkList
+                                networks={data.networks}
+                                loading={loading.networks}
+                                error={error.networks}
+                                onRefresh={loadNetworks}
+                                startScan={handleStartScan}
+                                connectivity={dataManagerConnectivity}
+                                realTimeScan={realTimeScan}
+                                onStartRealTimeScan={startRealTimeScan}
+                                onStopRealTimeScan={stopRealTimeScan}
+                            />
+                        )}
+                        {activeTab === 'devices' && (
+                            <DeviceList
+                                devices={data.devices}
+                                loading={loading.devices}
+                                error={error.devices}
+                                scanProgress={scanProgress}
+                                onScanComplete={handleScanComplete}
+                                onStartScan={handleStartScan}
+                                onCancelScan={handleCancelScan}
+                                connectivity={dataManagerConnectivity}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
+            <Footer />
         </div>
     );
 }

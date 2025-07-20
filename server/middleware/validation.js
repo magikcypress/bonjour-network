@@ -1,324 +1,278 @@
-const CommandValidator = require('../security/command-validator');
+const logger = require('../utils/logger');
 
-/**
- * Middleware de validation des adresses MAC
- */
-const validateMacAddress = (req, res, next) => {
-    const { mac } = req.body;
+// Validation des modes de scan
+function validateScanMode(mode) {
+    const validModes = ['fast', 'complete'];
+    return validModes.includes(mode);
+}
 
-    if (!mac) {
-        return res.status(400).json({
-            error: 'Adresse MAC requise',
-            code: 'MISSING_MAC'
+// Validation des adresses MAC
+function validateMacAddress(mac) {
+    if (!mac || typeof mac !== 'string') return false;
+    const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+    return macRegex.test(mac);
+}
+
+// Validation des adresses IP
+function validateIpAddress(ip) {
+    if (!ip || typeof ip !== 'string') return false;
+    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    return ipRegex.test(ip);
+}
+
+// Validation des paramètres Mistral AI
+function validateMistralParams(params) {
+    if (!params || typeof params !== 'object') return false;
+
+    const requiredFields = ['apiKey', 'endpoint'];
+    return requiredFields.every(field => params[field] && typeof params[field] === 'string');
+}
+
+// Validation de la taille du payload
+function validatePayloadSize(payload, maxSize = 1024 * 1024) { // 1MB par défaut
+    if (!payload) return true;
+
+    const payloadSize = JSON.stringify(payload).length;
+    return payloadSize <= maxSize;
+}
+
+// Validation des origines CORS
+function validateOrigin(origin) {
+    if (!origin) return false;
+
+    const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'];
+    return allowedOrigins.some(allowed => origin.startsWith(allowed.trim()));
+}
+
+// Validation des tokens d'authentification
+function validateAuthToken(token) {
+    if (!token || typeof token !== 'string') return false;
+
+    // Vérification basique du format JWT
+    const jwtRegex = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$/;
+    return jwtRegex.test(token);
+}
+
+// Validation des paramètres de requête
+function validateQueryParams(params, allowedParams) {
+    if (!params || typeof params !== 'object') return false;
+
+    const providedParams = Object.keys(params);
+    return providedParams.every(param => allowedParams.includes(param));
+}
+
+// Validation des données de scan
+function validateScanData(data) {
+    if (!data || typeof data !== 'object') return false;
+
+    const requiredFields = ['mode'];
+    const validModes = ['fast', 'complete'];
+
+    return requiredFields.every(field => data[field]) &&
+        validModes.includes(data.mode);
+}
+
+// Middleware de validation des données de scan
+function validateScanRequest(req, res, next) {
+    try {
+        const { mode } = req.body;
+
+        if (!validateScanMode(mode)) {
+            logger.securityThreat('Mode de scan invalide', {
+                ip: req.ip,
+                mode: mode
+            });
+            return res.status(400).json({
+                error: 'Mode de scan invalide',
+                code: 'INVALID_SCAN_MODE',
+                allowedModes: ['fast', 'complete']
+            });
+        }
+
+        next();
+    } catch (error) {
+        logger.errorWithContext(error, {
+            middleware: 'validateScanRequest',
+            ip: req.ip
+        });
+        res.status(500).json({
+            error: 'Erreur de validation',
+            code: 'VALIDATION_ERROR'
         });
     }
+}
 
-    if (!CommandValidator.isValidMac(mac)) {
-        return res.status(400).json({
-            error: 'Format d\'adresse MAC invalide',
-            code: 'INVALID_MAC_FORMAT',
-            expected: 'XX:XX:XX:XX:XX:XX ou XX-XX-XX-XX-XX-XX'
+// Middleware de validation des paramètres de requête
+function validateQueryParamsMiddleware(allowedParams) {
+    return (req, res, next) => {
+        try {
+            if (!validateQueryParams(req.query, allowedParams)) {
+                logger.securityThreat('Paramètres de requête invalides', {
+                    ip: req.ip,
+                    query: req.query
+                });
+                return res.status(400).json({
+                    error: 'Paramètres de requête invalides',
+                    code: 'INVALID_QUERY_PARAMS',
+                    allowedParams
+                });
+            }
+
+            next();
+        } catch (error) {
+            logger.errorWithContext(error, {
+                middleware: 'validateQueryParams',
+                ip: req.ip
+            });
+            res.status(500).json({
+                error: 'Erreur de validation',
+                code: 'VALIDATION_ERROR'
+            });
+        }
+    };
+}
+
+// Middleware de validation de la taille du payload
+function validatePayloadSizeMiddleware(maxSize = 1024 * 1024) {
+    return (req, res, next) => {
+        try {
+            if (!validatePayloadSize(req.body, maxSize)) {
+                logger.securityThreat('Payload trop volumineux', {
+                    ip: req.ip,
+                    size: JSON.stringify(req.body).length
+                });
+                return res.status(413).json({
+                    error: 'Payload trop volumineux',
+                    code: 'PAYLOAD_TOO_LARGE',
+                    maxSize: maxSize
+                });
+            }
+
+            next();
+        } catch (error) {
+            logger.errorWithContext(error, {
+                middleware: 'validatePayloadSize',
+                ip: req.ip
+            });
+            res.status(500).json({
+                error: 'Erreur de validation',
+                code: 'VALIDATION_ERROR'
+            });
+        }
+    };
+}
+
+// Middleware de validation des origines
+function validateOriginMiddleware(req, res, next) {
+    try {
+        const origin = req.headers.origin;
+
+        if (!validateOrigin(origin)) {
+            logger.securityThreat('Origine non autorisée', {
+                ip: req.ip,
+                origin: origin
+            });
+            return res.status(403).json({
+                error: 'Origine non autorisée',
+                code: 'UNAUTHORIZED_ORIGIN'
+            });
+        }
+
+        next();
+    } catch (error) {
+        logger.errorWithContext(error, {
+            middleware: 'validateOrigin',
+            ip: req.ip
+        });
+        res.status(500).json({
+            error: 'Erreur de validation',
+            code: 'VALIDATION_ERROR'
         });
     }
+}
 
-    next();
-};
+// Middleware de validation des tokens d'authentification
+function validateAuthTokenMiddleware(req, res, next) {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
 
-/**
- * Middleware de validation des adresses IP
- */
-const validateIpAddress = (req, res, next) => {
-    const { ip } = req.body;
+        if (!validateAuthToken(token)) {
+            logger.securityThreat('Token d\'authentification invalide', {
+                ip: req.ip
+            });
+            return res.status(401).json({
+                error: 'Token d\'authentification invalide',
+                code: 'INVALID_AUTH_TOKEN'
+            });
+        }
 
-    if (!ip) {
-        return res.status(400).json({
-            error: 'Adresse IP requise',
-            code: 'MISSING_IP'
+        next();
+    } catch (error) {
+        logger.errorWithContext(error, {
+            middleware: 'validateAuthToken',
+            ip: req.ip
+        });
+        res.status(500).json({
+            error: 'Erreur de validation',
+            code: 'VALIDATION_ERROR'
         });
     }
+}
 
-    if (!CommandValidator.isValidIp(ip)) {
-        return res.status(400).json({
-            error: 'Format d\'adresse IP invalide',
-            code: 'INVALID_IP_FORMAT',
-            expected: 'XXX.XXX.XXX.XXX'
+// Middleware de validation des données d'appareil
+function validateDeviceDataMiddleware(req, res, next) {
+    try {
+        const { ip, mac } = req.body;
+
+        if (ip && !validateIpAddress(ip)) {
+            logger.securityThreat('Adresse IP invalide', {
+                ip: req.ip,
+                deviceIp: ip
+            });
+            return res.status(400).json({
+                error: 'Adresse IP invalide',
+                code: 'INVALID_IP_ADDRESS'
+            });
+        }
+
+        if (mac && !validateMacAddress(mac)) {
+            logger.securityThreat('Adresse MAC invalide', {
+                ip: req.ip,
+                deviceMac: mac
+            });
+            return res.status(400).json({
+                error: 'Adresse MAC invalide',
+                code: 'INVALID_MAC_ADDRESS'
+            });
+        }
+
+        next();
+    } catch (error) {
+        logger.errorWithContext(error, {
+            middleware: 'validateDeviceData',
+            ip: req.ip
+        });
+        res.status(500).json({
+            error: 'Erreur de validation',
+            code: 'VALIDATION_ERROR'
         });
     }
-
-    next();
-};
-
-/**
- * Middleware de validation des commandes système
- */
-const validateSystemCommand = (req, res, next) => {
-    const { command } = req.body;
-
-    if (!command) {
-        return res.status(400).json({
-            error: 'Commande requise',
-            code: 'MISSING_COMMAND'
-        });
-    }
-
-    if (!CommandValidator.validate(command)) {
-        return res.status(403).json({
-            error: 'Commande non autorisée',
-            code: 'UNAUTHORIZED_COMMAND'
-        });
-    }
-
-    next();
-};
-
-/**
- * Middleware de validation des paramètres de scan
- */
-const validateScanParams = (req, res, next) => {
-    const { scanMode, networkRange, timeout } = req.body;
-
-    // Validation du mode de scan
-    if (scanMode && !['fast', 'complete'].includes(scanMode)) {
-        return res.status(400).json({
-            error: 'Mode de scan invalide',
-            code: 'INVALID_SCAN_MODE',
-            allowed: ['fast', 'complete']
-        });
-    }
-
-    // Validation de la plage réseau
-    if (networkRange && !CommandValidator.isValidIp(networkRange.split('/')[0])) {
-        return res.status(400).json({
-            error: 'Plage réseau invalide',
-            code: 'INVALID_NETWORK_RANGE'
-        });
-    }
-
-    // Validation du timeout
-    if (timeout && (isNaN(timeout) || timeout < 1000 || timeout > 60000)) {
-        return res.status(400).json({
-            error: 'Timeout invalide',
-            code: 'INVALID_TIMEOUT',
-            allowed: '1000-60000 ms'
-        });
-    }
-
-    next();
-};
-
-/**
- * Middleware de validation des paramètres d'optimisation
- */
-const validateOptimizationParams = (req, res, next) => {
-    const { channel, frequency, security } = req.body;
-
-    // Validation du canal
-    if (channel && (isNaN(channel) || channel < 1 || channel > 165)) {
-        return res.status(400).json({
-            error: 'Canal invalide',
-            code: 'INVALID_CHANNEL',
-            allowed: '1-165'
-        });
-    }
-
-    // Validation de la fréquence
-    if (frequency && !['2.4', '5', '6'].includes(frequency)) {
-        return res.status(400).json({
-            error: 'Fréquence invalide',
-            code: 'INVALID_FREQUENCY',
-            allowed: ['2.4', '5', '6']
-        });
-    }
-
-    // Validation de la sécurité
-    if (security && !['WPA', 'WPA2', 'WPA3', 'WEP', 'Open'].includes(security)) {
-        return res.status(400).json({
-            error: 'Type de sécurité invalide',
-            code: 'INVALID_SECURITY',
-            allowed: ['WPA', 'WPA2', 'WPA3', 'WEP', 'Open']
-        });
-    }
-
-    next();
-};
-
-/**
- * Middleware de validation des paramètres Mistral AI
- */
-const validateMistralParams = (req, res, next) => {
-    const { devices, batchSize } = req.body;
-
-    // Validation des appareils
-    if (devices && !Array.isArray(devices)) {
-        return res.status(400).json({
-            error: 'Liste d\'appareils invalide',
-            code: 'INVALID_DEVICES_ARRAY'
-        });
-    }
-
-    // Validation de la taille du lot
-    if (batchSize && (isNaN(batchSize) || batchSize < 1 || batchSize > 50)) {
-        return res.status(400).json({
-            error: 'Taille de lot invalide',
-            code: 'INVALID_BATCH_SIZE',
-            allowed: '1-50'
-        });
-    }
-
-    next();
-};
-
-/**
- * Middleware de validation des headers de sécurité
- */
-const validateSecurityHeaders = (req, res, next) => {
-    const requiredHeaders = ['Content-Type'];
-    const missingHeaders = requiredHeaders.filter(header =>
-        !req.headers[header.toLowerCase()]
-    );
-
-    if (missingHeaders.length > 0) {
-        return res.status(400).json({
-            error: 'Headers requis manquants',
-            code: 'MISSING_HEADERS',
-            missing: missingHeaders
-        });
-    }
-
-    next();
-};
-
-/**
- * Middleware de validation des limites de taille
- */
-const validatePayloadSize = (req, res, next) => {
-    const maxSize = 1024 * 1024; // 1MB
-
-    if (req.headers['content-length'] &&
-        parseInt(req.headers['content-length']) > maxSize) {
-        return res.status(413).json({
-            error: 'Payload trop volumineux',
-            code: 'PAYLOAD_TOO_LARGE',
-            maxSize: '1MB'
-        });
-    }
-
-    next();
-};
-
-/**
- * Middleware de validation des paramètres de pagination
- */
-const validatePagination = (req, res, next) => {
-    const { page, limit } = req.query;
-
-    if (page && (isNaN(page) || page < 1)) {
-        return res.status(400).json({
-            error: 'Numéro de page invalide',
-            code: 'INVALID_PAGE',
-            allowed: '>= 1'
-        });
-    }
-
-    if (limit && (isNaN(limit) || limit < 1 || limit > 100)) {
-        return res.status(400).json({
-            error: 'Limite invalide',
-            code: 'INVALID_LIMIT',
-            allowed: '1-100'
-        });
-    }
-
-    next();
-};
-
-/**
- * Middleware de validation des paramètres de tri
- */
-const validateSorting = (req, res, next) => {
-    const { sortBy, sortOrder } = req.query;
-    const allowedFields = ['ssid', 'signalStrength', 'security', 'channel', 'lastSeen'];
-    const allowedOrders = ['asc', 'desc'];
-
-    if (sortBy && !allowedFields.includes(sortBy)) {
-        return res.status(400).json({
-            error: 'Champ de tri invalide',
-            code: 'INVALID_SORT_FIELD',
-            allowed: allowedFields
-        });
-    }
-
-    if (sortOrder && !allowedOrders.includes(sortOrder.toLowerCase())) {
-        return res.status(400).json({
-            error: 'Ordre de tri invalide',
-            code: 'INVALID_SORT_ORDER',
-            allowed: allowedOrders
-        });
-    }
-
-    next();
-};
-
-/**
- * Middleware de validation des paramètres de filtrage
- */
-const validateFiltering = (req, res, next) => {
-    const { security, frequency, signalMin, signalMax } = req.query;
-    const allowedSecurity = ['WPA', 'WPA2', 'WPA3', 'WEP', 'Open'];
-    const allowedFrequencies = ['2.4', '5', '6'];
-
-    if (security && !allowedSecurity.includes(security)) {
-        return res.status(400).json({
-            error: 'Filtre de sécurité invalide',
-            code: 'INVALID_SECURITY_FILTER',
-            allowed: allowedSecurity
-        });
-    }
-
-    if (frequency && !allowedFrequencies.includes(frequency)) {
-        return res.status(400).json({
-            error: 'Filtre de fréquence invalide',
-            code: 'INVALID_FREQUENCY_FILTER',
-            allowed: allowedFrequencies
-        });
-    }
-
-    if (signalMin && (isNaN(signalMin) || signalMin < -100 || signalMin > 0)) {
-        return res.status(400).json({
-            error: 'Signal minimum invalide',
-            code: 'INVALID_SIGNAL_MIN',
-            allowed: '-100 à 0 dBm'
-        });
-    }
-
-    if (signalMax && (isNaN(signalMax) || signalMax < -100 || signalMax > 0)) {
-        return res.status(400).json({
-            error: 'Signal maximum invalide',
-            code: 'INVALID_SIGNAL_MAX',
-            allowed: '-100 à 0 dBm'
-        });
-    }
-
-    if (signalMin && signalMax && parseInt(signalMin) > parseInt(signalMax)) {
-        return res.status(400).json({
-            error: 'Plage de signal invalide',
-            code: 'INVALID_SIGNAL_RANGE',
-            message: 'Le minimum doit être inférieur au maximum'
-        });
-    }
-
-    next();
-};
+}
 
 module.exports = {
+    validateScanMode,
     validateMacAddress,
     validateIpAddress,
-    validateSystemCommand,
-    validateScanParams,
-    validateOptimizationParams,
     validateMistralParams,
-    validateSecurityHeaders,
     validatePayloadSize,
-    validatePagination,
-    validateSorting,
-    validateFiltering
+    validateOrigin,
+    validateAuthToken,
+    validateQueryParams,
+    validateScanData,
+    validateScanRequest,
+    validateQueryParamsMiddleware,
+    validatePayloadSizeMiddleware,
+    validateOriginMiddleware,
+    validateAuthTokenMiddleware,
+    validateDeviceDataMiddleware
 }; 

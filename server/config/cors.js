@@ -18,7 +18,8 @@ const corsConfig = {
             'Authorization',
             'X-Requested-With',
             'Accept',
-            'Origin'
+            'Origin',
+            'X-Client-Version'
         ],
         exposedHeaders: [
             'X-Total-Count',

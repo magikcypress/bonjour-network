@@ -611,7 +611,7 @@ curl -X POST http://localhost:5001/api/devices/identify \
 curl -X GET http://localhost:5001/api/devices/fast
 
 # Vérifier les méthodes disponibles
-node server/test-scan-comparison.js
+node tests/test-scan-comparison.js
 ```
 
 #### **"Socket.IO ne fonctionne pas"**
@@ -621,7 +621,7 @@ node server/test-scan-comparison.js
 curl -I http://localhost:5001
 
 # Tester Socket.IO
-node test-socket.js
+node tests/test-socket.js
 ```
 
 ### **Logs de débogage**
@@ -721,6 +721,49 @@ docker build -t wifi-tracker .
 # Run container
 docker run -p 3000:3000 -p 5001:5001 wifi-tracker
 ```
+
+## 🧪 Tests
+
+### **Tests automatisés**
+
+Le projet inclut une suite complète de tests automatisés utilisant **Puppeteer** pour tester l'interface utilisateur et les fonctionnalités :
+
+#### **📁 Répertoire des tests**
+
+```bash
+tests/                    # Tous les tests Puppeteer
+├── README.md            # Documentation des tests
+├── test-auto-scan-missing.js      # Test du scan automatique
+├── test-invalid-networks.js       # Test des réseaux non validés
+├── test-toggle-switch.js          # Test du bouton toggle
+├── test-websocket.js              # Test de la communication WebSocket
+└── ...                           # 18 tests au total
+```
+
+#### **🚀 Exécution des tests**
+
+```bash
+# Tous les tests
+npm test
+
+# Test spécifique
+node tests/test-auto-scan-missing.js
+
+# Test de validation
+node tests/test-invalid-networks.js
+```
+
+#### **📋 Types de tests**
+
+- **Tests de validation** - Vérification des réseaux validés/non validés
+- **Tests du scan automatique** - Comportement du toggle et des scans
+- **Tests des compteurs** - Synchronisation des compteurs UI
+- **Tests WebSocket** - Communication temps réel
+- **Tests d'interface** - Interactions utilisateur
+
+#### **📖 Documentation complète**
+
+Voir [tests/README.md](tests/README.md) pour la documentation détaillée de tous les tests.
 
 ## 🤝 Contribution
 

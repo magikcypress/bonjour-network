@@ -2,170 +2,197 @@ const { exec } = require('child_process');
 const util = require('util');
 const execAsync = util.promisify(exec);
 
-class RealWiFiScanner {
+class RealWifiScanner {
     constructor() {
-        this.airportPath = '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport';
+        this.networks = [];
     }
 
     async scanNetworks() {
-        try {
-            // Essayer d'abord wdutil pour obtenir le réseau actuel
-            const currentNetwork = await this.getCurrentNetworkInfo();
+        console.log('🔍 Démarrage du scan des vrais réseaux WiFi...');
 
-            // Essayer de scanner avec airport (peut ne pas fonctionner)
-            let additionalNetworks = [];
-            try {
-                const { stdout } = await execAsync(`${this.airportPath} -s`);
-                additionalNetworks = this.parseAirportOutput(stdout);
-            } catch (airportError) {
-                console.log('airport command dépréciée, utilisation de wdutil uniquement');
+        try {
+            // Méthode 1: Essayer avec airport (déprécié mais parfois fonctionne)
+            const airportResult = await this.scanWithAirport();
+            if (airportResult.length > 0) {
+                console.log(`✅ Scan airport réussi: ${airportResult.length} réseaux`);
+                return airportResult;
             }
 
-            // Combiner les réseaux
-            const allNetworks = [currentNetwork, ...additionalNetworks].filter(network => network);
+            // Méthode 2: Essayer avec wdutil
+            const wdutilResult = await this.scanWithWdutil();
+            if (wdutilResult.length > 0) {
+                console.log(`✅ Scan wdutil réussi: ${wdutilResult.length} réseaux`);
+                return wdutilResult;
+            }
 
-            return allNetworks;
+            // Méthode 3: Essayer avec system_profiler
+            const systemProfilerResult = await this.scanWithSystemProfiler();
+            if (systemProfilerResult.length > 0) {
+                console.log(`✅ Scan system_profiler réussi: ${systemProfilerResult.length} réseaux`);
+                return systemProfilerResult;
+            }
+
+            console.log('❌ Aucune méthode de scan n\'a fonctionné');
+            return [];
+
         } catch (error) {
-            console.error('Erreur lors du scan WiFi:', error);
+            console.error('❌ Erreur lors du scan:', error.message);
             return [];
         }
     }
 
-    async getCurrentNetworkInfo() {
+    async scanWithAirport() {
         try {
-            const { stdout } = await execAsync('sudo wdutil info');
+            const { stdout } = await execAsync('sudo /System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -s');
+
+            if (!stdout || stdout.includes('WARNING')) {
+                return [];
+            }
+
+            const networks = [];
             const lines = stdout.split('\n');
-            const networkInfo = {};
 
             for (const line of lines) {
-                const trimmedLine = line.trim();
-                if (trimmedLine.includes('SSID')) {
-                    networkInfo.ssid = trimmedLine.split(':')[1]?.trim() || 'Réseau actuel';
-                } else if (trimmedLine.includes('RSSI')) {
-                    networkInfo.rssi = trimmedLine.split(':')[1]?.trim() || '-50';
-                } else if (trimmedLine.includes('Channel')) {
-                    networkInfo.channel = trimmedLine.split(':')[1]?.trim() || '6';
-                } else if (trimmedLine.includes('Security')) {
-                    networkInfo.security = trimmedLine.split(':')[1]?.trim() || 'WPA3';
-                } else if (trimmedLine.includes('BSSID')) {
-                    networkInfo.bssid = trimmedLine.split(':')[1]?.trim() || 'N/A';
+                if (line.trim() === '' || line.includes('SSID') || line.includes('BSSID')) {
+                    continue;
+                }
+
+                const parts = line.trim().split(/\s+/);
+                if (parts.length >= 6) {
+                    const network = {
+                        ssid: parts[0],
+                        bssid: parts[1],
+                        rssi: parseInt(parts[2]),
+                        channel: parseInt(parts[3]),
+                        security: parts[4],
+                        mode: 'infrastructure',
+                        frequency: 2400 + (parseInt(parts[3]) - 1) * 5,
+                        signal_level: parseInt(parts[2]),
+                        quality: Math.max(0, Math.min(100, 100 + parseInt(parts[2]))),
+                        security_flags: [parts[4]]
+                    };
+                    networks.push(network);
                 }
             }
 
-            if (networkInfo.ssid && networkInfo.ssid !== 'Réseau actuel') {
-                return {
-                    ssid: networkInfo.ssid,
-                    bssid: networkInfo.bssid || 'N/A',
-                    rssi: networkInfo.rssi,
-                    channel: networkInfo.channel,
-                    security: networkInfo.security,
-                    signalStrength: this.convertRSSIToPercentage(networkInfo.rssi),
-                    frequency: this.channelToFrequency(networkInfo.channel),
-                    lastSeen: new Date().toISOString(),
-                    isCurrentNetwork: true
-                };
-            }
-
-            return null;
+            return networks;
         } catch (error) {
-            console.error('Erreur lors de la récupération du réseau actuel:', error);
-            return null;
+            console.log('⚠️ Scan airport échoué:', error.message);
+            return [];
         }
     }
 
-    parseAirportOutput(output) {
-        const lines = output.trim().split('\n');
-        const networks = [];
+    async scanWithWdutil() {
+        try {
+            const { stdout } = await execAsync('sudo wdutil dump');
 
-        // Ignorer les lignes d'avertissement et d'en-tête
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line || line.includes('WARNING') || line.includes('SSID') || line.includes('For diagnosing')) {
-                continue;
+            if (!stdout) {
+                return [];
             }
 
-            // Parser chaque ligne de réseau
-            const parts = line.split(/\s+/);
-            if (parts.length >= 5) {
-                const network = {
-                    ssid: parts[0],
-                    bssid: parts[1] || 'N/A',
-                    rssi: parts[2] || '-50',
-                    channel: parts[3] || '6',
-                    security: parts[4] || 'Unknown',
-                    signalStrength: this.convertRSSIToPercentage(parts[2] || '-50'),
-                    frequency: this.channelToFrequency(parts[3] || '6'),
-                    lastSeen: new Date().toISOString()
-                };
-                networks.push(network);
+            const networks = [];
+            const lines = stdout.split('\n');
+            let currentNetwork = null;
+
+            for (const line of lines) {
+                if (line.includes('SSID')) {
+                    if (currentNetwork) {
+                        networks.push(currentNetwork);
+                    }
+                    currentNetwork = {};
+                    const ssidMatch = line.match(/SSID\s*:\s*(.+)/);
+                    if (ssidMatch) {
+                        currentNetwork.ssid = ssidMatch[1].trim();
+                    }
+                } else if (line.includes('BSSID') && currentNetwork) {
+                    const bssidMatch = line.match(/BSSID\s*:\s*(.+)/);
+                    if (bssidMatch) {
+                        currentNetwork.bssid = bssidMatch[1].trim();
+                    }
+                } else if (line.includes('RSSI') && currentNetwork) {
+                    const rssiMatch = line.match(/RSSI\s*:\s*(-?\d+)/);
+                    if (rssiMatch) {
+                        const rssi = parseInt(rssiMatch[1]);
+                        currentNetwork.signal_level = rssi;
+                        currentNetwork.quality = Math.max(0, Math.min(100, 100 + rssi));
+                    }
+                } else if (line.includes('Channel') && currentNetwork) {
+                    const channelMatch = line.match(/Channel\s*:\s*(\d+)/);
+                    if (channelMatch) {
+                        const channel = parseInt(channelMatch[1]);
+                        currentNetwork.channel = channel;
+                        currentNetwork.frequency = 2400 + (channel - 1) * 5;
+                    }
+                }
             }
+
+            if (currentNetwork) {
+                networks.push(currentNetwork);
+            }
+
+            return networks;
+        } catch (error) {
+            console.log('⚠️ Scan wdutil échoué:', error.message);
+            return [];
         }
-
-        return networks;
     }
 
-    convertRSSIToPercentage(rssi) {
-        const rssiValue = parseInt(rssi);
-        if (isNaN(rssiValue)) return 50;
+    async scanWithSystemProfiler() {
+        try {
+            const { stdout } = await execAsync('sudo system_profiler SPAirPortDataType -xml');
 
-        // Conversion RSSI vers pourcentage
-        // RSSI typique: -100 (très faible) à -30 (très fort)
-        const percentage = Math.max(0, Math.min(100, ((rssiValue + 100) * 100) / 70));
-        return Math.round(percentage);
-    }
+            if (!stdout) {
+                return [];
+            }
 
-    channelToFrequency(channel) {
-        const channelNum = parseInt(channel);
-        if (isNaN(channelNum)) return 'N/A';
+            const networks = [];
+            const lines = stdout.split('\n');
+            let currentNetwork = null;
 
-        // Conversion canal vers fréquence
-        if (channelNum >= 1 && channelNum <= 14) {
-            return (2407 + (channelNum * 5)).toString(); // 2.4GHz
-        } else if (channelNum >= 36 && channelNum <= 165) {
-            return (5000 + (channelNum * 5)).toString(); // 5GHz
-        } else if (channelNum >= 1 && channelNum <= 233) {
-            return (5950 + (channelNum * 5)).toString(); // 6GHz
+            for (const line of lines) {
+                if (line.includes('<key>SSID_STR</key>')) {
+                    if (currentNetwork) {
+                        networks.push(currentNetwork);
+                    }
+                    currentNetwork = {};
+                } else if (line.includes('<string>') && currentNetwork) {
+                    const match = line.match(/<string>(.*?)<\/string>/);
+                    if (match) {
+                        if (!currentNetwork.ssid) {
+                            currentNetwork.ssid = match[1];
+                        } else if (!currentNetwork.bssid) {
+                            currentNetwork.bssid = match[1];
+                        }
+                    }
+                } else if (line.includes('<key>CHANNEL</key>') && currentNetwork) {
+                    const nextLine = lines[lines.indexOf(line) + 1];
+                    const match = nextLine.match(/<integer>(.*?)<\/integer>/);
+                    if (match) {
+                        const channel = parseInt(match[1]);
+                        currentNetwork.channel = channel;
+                        currentNetwork.frequency = 2400 + (channel - 1) * 5;
+                    }
+                } else if (line.includes('<key>RSSI</key>') && currentNetwork) {
+                    const nextLine = lines[lines.indexOf(line) + 1];
+                    const match = nextLine.match(/<integer>(.*?)<\/integer>/);
+                    if (match) {
+                        const rssi = parseInt(match[1]);
+                        currentNetwork.signal_level = rssi;
+                        currentNetwork.quality = Math.max(0, Math.min(100, 100 + rssi));
+                    }
+                }
+            }
+
+            if (currentNetwork) {
+                networks.push(currentNetwork);
+            }
+
+            return networks;
+        } catch (error) {
+            console.log('⚠️ Scan system_profiler échoué:', error.message);
+            return [];
         }
-
-        return 'N/A';
-    }
-
-    // Méthode pour simuler des réseaux voisins basés sur le réseau actuel
-    async generateNeighborNetworks(currentNetwork) {
-        if (!currentNetwork) return [];
-
-        const neighbors = [];
-        const baseChannel = parseInt(currentNetwork.channel) || 6;
-        const baseSSID = currentNetwork.ssid;
-
-        // Simuler quelques réseaux voisins
-        const neighborSSIDs = [
-            `${baseSSID}_Guest`,
-            'Voisin_WiFi',
-            'Cafe_Internet',
-            'Office_Network',
-            'Public_WiFi'
-        ];
-
-        neighborSSIDs.forEach((ssid, index) => {
-            const channel = (baseChannel + index + 1) % 13 || 1;
-            const rssi = -50 - (index * 10);
-
-            neighbors.push({
-                ssid: ssid,
-                bssid: `AA:BB:CC:DD:EE:${(index + 1).toString().padStart(2, '0')}`,
-                rssi: rssi.toString(),
-                channel: channel.toString(),
-                security: index % 2 === 0 ? 'WPA2' : 'WPA3',
-                signalStrength: this.convertRSSIToPercentage(rssi),
-                frequency: this.channelToFrequency(channel.toString()),
-                lastSeen: new Date().toISOString(),
-                isSimulated: true
-            });
-        });
-
-        return neighbors;
     }
 }
 
-module.exports = RealWiFiScanner; 
+module.exports = RealWifiScanner; 
