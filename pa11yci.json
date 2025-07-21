@@ -1,0 +1,10 @@
+{
+    "defaults": {
+        "timeout": 30000
+    },
+    "urls": [
+        "http://localhost:3000/",
+        "http://localhost:3000/appareils",
+        "http://localhost:3000/reseaux"
+    ]
+}
