@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDataManager } from './hooks/useDataManager';
 import Navigation from './components/Navigation';
 import NetworkList from './components/NetworkList';
@@ -33,16 +33,19 @@ function App() {
     const handleTabChange = (tabId) => {
         console.log('🔄 Changement d\'onglet vers:', tabId);
         console.log('📊 État connectivité:', dataManagerConnectivity);
+        console.log('🔌 État WebSocket avant changement:', dataManagerConnectivity.socket);
+        console.log('🌐 État API avant changement:', dataManagerConnectivity.api);
 
         // Permettre le changement d'onglet même si la connectivité n'est pas parfaite
-        // Seulement empêcher si vraiment aucune connexion
-        if (!dataManagerConnectivity.api && !dataManagerConnectivity.socket) {
-            console.warn('⚠️ Aucune connexion disponible, changement d\'onglet ignoré');
+        // Seulement empêcher si vraiment aucune connexion API
+        if (!dataManagerConnectivity.api) {
+            console.warn('⚠️ Aucune connexion API disponible, changement d\'onglet ignoré');
             return;
         }
 
         setActiveTab(tabId);
         console.log('✅ Onglet changé vers:', tabId);
+        console.log('🔌 WebSocket devrait se connecter automatiquement si onglet = devices');
     };
 
     // Gestionnaire de scan terminé

@@ -13,10 +13,7 @@ function NetworkList({
     error = null,
     onRefresh,
     startScan,
-    connectivity = { api: false, socket: false },
-    realTimeScan = { enabled: false },
-    onStartRealTimeScan,
-    onStopRealTimeScan
+    connectivity = { api: false, socket: false }
 }) {
     // Validation des données reçues
     const validatedNetworks = React.useMemo(() => {
@@ -55,25 +52,6 @@ function NetworkList({
             await onRefresh();
         } catch (error) {
             console.error('❌ Erreur lors du scan manuel:', error);
-        }
-    };
-
-    // Gestionnaire de contrôle du scan en temps réel
-    const handleRealTimeScanToggle = async () => {
-        console.log('🔄 Toggle switch cliqué, état actuel:', realTimeScan.enabled);
-        console.log('📡 Connectivité Socket.IO:', connectivity.socket);
-        console.log('🔧 Props reçues:', { realTimeScan, onStartRealTimeScan, onStopRealTimeScan });
-
-        try {
-            if (realTimeScan.enabled) {
-                console.log('🛑 Arrêt du scan en temps réel...');
-                await onStopRealTimeScan();
-            } else {
-                console.log('🔄 Démarrage du scan en temps réel...');
-                await onStartRealTimeScan();
-            }
-        } catch (error) {
-            console.error('❌ Erreur lors du contrôle du scan en temps réel:', error);
         }
     };
 
@@ -117,44 +95,8 @@ function NetworkList({
                         </button>
                     </div>
 
-                    {/* Toggle Switch pour le scan automatique */}
-                    <div className="flex items-center space-x-3">
-                        <div className="text-sm text-gray-600">
-                            {networks.length} réseaux détectés ({validatedNetworks.length} validés)
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-gray-700">Scan automatique</span>
-
-                            {/* Toggle Switch unifié */}
-                            <div className="flex flex-col items-center">
-
-                                {/* Toggle Switch */}
-                                <button
-                                    onClick={handleRealTimeScanToggle}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${realTimeScan.enabled
-                                        ? 'bg-gradient-to-r from-green-500 to-emerald-500'
-                                        : 'bg-gray-200 hover:bg-gray-300'
-                                        }`}
-                                >
-                                    <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${realTimeScan.enabled ? 'translate-x-6' : 'translate-x-1'
-                                            }`}
-                                    />
-                                </button>
-
-                                {/* Texte d'état */}
-                                {realTimeScan.enabled ? (
-                                    <div className="flex items-center text-xs text-green-600 mt-1">
-                                        <span>Actif (5 max)</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center text-xs text-gray-500 mt-1">
-                                        <span>Inactif</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                    <div className="text-sm text-gray-600">
+                        {networks.length} réseaux détectés ({validatedNetworks.length} validés)
                     </div>
                 </div>
 

@@ -14,16 +14,24 @@ class ImprovedDeviceScanner {
     }
 
     emitProgress(step, status, message, data = null, command = null) {
+        const progressData = {
+            step,
+            status,
+            message,
+            timestamp: new Date().toISOString(),
+            data,
+            command
+        };
+
+        console.log(`📡 Émission de progression:`, progressData);
+
         if (this.io) {
-            this.io.emit('scan-progress', {
-                step,
-                status,
-                message,
-                timestamp: new Date().toISOString(),
-                data,
-                command
-            });
+            console.log(`🔌 Émission via Socket.IO vers tous les clients`);
+            this.io.emit('scan-progress', progressData);
+        } else {
+            console.warn(`⚠️ Pas d'instance io disponible pour émettre la progression`);
         }
+
         console.log(`📡 [${step}] ${status}: ${message}${command ? ` (${command})` : ''}`);
     }
 

@@ -27,10 +27,10 @@ async function testToggleAutoInvalid() {
         const toggleSwitch = await page.evaluate(() => {
             // Chercher différents types de toggles
             const toggles = [
-                ...document.querySelectorAll('input[type="checkbox"]'),
+                ...document.querySelectorAll('button.bg-gradient-to-r'),
                 ...document.querySelectorAll('button[role="switch"]'),
-                ...document.querySelectorAll('.toggle-switch'),
-                ...document.querySelectorAll('[data-testid*="toggle"]'),
+                ...document.querySelectorAll('.bg-gradient-to-r from-green-500 to-emerald-500'),
+                ...document.querySelectorAll('button.bg-gradient-to-r'),
                 ...document.querySelectorAll('[class*="toggle"]')
             ];
 
@@ -76,7 +76,7 @@ async function testToggleAutoInvalid() {
             }
 
             // Méthode 2: Chercher un toggle switch
-            const toggles = document.querySelectorAll('input[type="checkbox"], button[role="switch"], .toggle-switch');
+            const toggles = document.querySelectorAll('button.bg-gradient-to-r, button[role="switch"], .bg-gradient-to-r from-green-500 to-emerald-500');
             if (toggles.length > 0) {
                 toggles[0].click();
                 return 'Toggle switch cliqué';
@@ -138,7 +138,7 @@ async function testToggleAutoInvalid() {
                 return 'Mode automatique désactivé';
             }
 
-            const toggles = document.querySelectorAll('input[type="checkbox"], button[role="switch"], .toggle-switch');
+            const toggles = document.querySelectorAll('button.bg-gradient-to-r, button[role="switch"], .bg-gradient-to-r from-green-500 to-emerald-500');
             if (toggles.length > 0) {
                 toggles[0].click();
                 return 'Toggle désactivé';

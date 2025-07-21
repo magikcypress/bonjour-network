@@ -221,8 +221,15 @@ class EnvironmentValidator {
         }
 
         if (validation.warnings.length > 0) {
-            console.warn('⚠️ Avertissements de configuration:');
-            validation.warnings.forEach(warning => console.warn(`  - ${warning}`));
+            // Supprimer les avertissements pour les variables optionnelles avec valeurs par défaut
+            const filteredWarnings = validation.warnings.filter(warning =>
+                !warning.includes('non définie, utilisation de la valeur par défaut')
+            );
+
+            if (filteredWarnings.length > 0) {
+                console.warn('⚠️ Avertissements de configuration:');
+                filteredWarnings.forEach(warning => console.warn(`  - ${warning}`));
+            }
         }
 
         return validation.config;

@@ -54,6 +54,9 @@ class SocketService {
         // Connexion réussie
         this.socket.on('connect', () => {
             console.log('✅ Socket.IO connecté:', this.socket.id);
+            console.log(`🔌 Socket ID: ${this.socket.id}`);
+            console.log(`🌐 URL de connexion: ${this.baseURL}`);
+            console.log(`⏱️ Timestamp: ${new Date().toISOString()}`);
             this.isConnected = true;
             this.reconnectAttempts = 0;
             resolve(this.socket);
@@ -75,6 +78,9 @@ class SocketService {
         // Déconnexion
         this.socket.on('disconnect', (reason) => {
             console.log('🔌 Socket.IO déconnecté:', reason);
+            console.log(`🔌 Socket ID: ${this.socket.id}`);
+            console.log(`⏱️ Timestamp: ${new Date().toISOString()}`);
+            console.log(`📊 Raison: ${reason}`);
             this.isConnected = false;
 
             if (reason === 'io server disconnect') {
@@ -91,36 +97,53 @@ class SocketService {
         // Progression du scan
         this.socket.on('scan-progress', (data) => {
             console.log('📡 Progression du scan:', data);
+            console.log(`📊 Étape: ${data.step || 'N/A'}`);
+            console.log(`📈 Progression: ${data.progress || 0}%`);
+            console.log(`💬 Message: ${data.message || 'N/A'}`);
+            console.log(`⏱️ Timestamp: ${new Date().toISOString()}`);
             this.emitCustomEvent('scan-progress', data);
         });
 
         // Scan terminé
         this.socket.on('scan-complete', (data) => {
             console.log('✅ Scan terminé:', data);
+            console.log(`📊 Résultats: ${data.devices?.length || 0} appareils détectés`);
+            console.log(`⏱️ Durée totale: ${data.duration || 'N/A'}`);
+            console.log(`🎯 Type de scan: ${data.scanType || 'N/A'}`);
+            console.log(`📈 Progression finale: 100%`);
             this.emitCustomEvent('scan-complete', data);
         });
 
         // Erreur de scan
         this.socket.on('scan-error', (error) => {
             console.error('❌ Erreur de scan:', error);
+            console.error(`🚨 Type d'erreur: ${error.type || 'N/A'}`);
+            console.error(`💬 Message d'erreur: ${error.message || 'N/A'}`);
+            console.error(`⏱️ Timestamp: ${new Date().toISOString()}`);
             this.emitCustomEvent('scan-error', error);
         });
 
         // Scan annulé
         this.socket.on('scan-cancelled', () => {
             console.log('🚫 Scan annulé');
+            console.log(`⏱️ Timestamp: ${new Date().toISOString()}`);
+            console.log(`🔌 Socket ID: ${this.socket.id}`);
             this.emitCustomEvent('scan-cancelled');
         });
 
         // Statut du scan en temps réel
         this.socket.on('real-time-scan-status', (status) => {
             console.log('📡 Statut du scan en temps réel:', status);
+            console.log(`🔄 Activé: ${status.enabled ? 'OUI' : 'NON'}`);
+            console.log(`⏱️ Timestamp: ${new Date().toISOString()}`);
             this.emitCustomEvent('real-time-scan-status', status);
         });
 
         // Mise à jour des réseaux
         this.socket.on('networks-updated', (networks) => {
             console.log('📡 Réseaux mis à jour:', networks.length);
+            console.log(`📊 Nombre de réseaux: ${networks.length}`);
+            console.log(`⏱️ Timestamp: ${new Date().toISOString()}`);
             this.emitCustomEvent('networks-updated', networks);
         });
     }
@@ -164,7 +187,13 @@ class SocketService {
             }
 
             console.log(`📡 Démarrage du scan ${mode} (type: ${type})...`);
+            console.log(`🔍 Mode de scan: ${mode === 'complete' ? 'COMPLET (8 étapes)' : 'RAPIDE (4 étapes)'}`);
+            console.log(`🎯 Type de scan: ${type}`);
+            console.log(`🔌 Socket ID: ${this.socket.id}`);
+
             this.socket.emit('start-scan', { mode, type });
+
+            console.log(`✅ Émission de l'événement 'start-scan' avec:`, { mode, type });
             return true;
         } catch (error) {
             console.error('❌ Erreur lors du démarrage du scan:', error);

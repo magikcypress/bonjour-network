@@ -58,6 +58,10 @@ io.on('connection', (socket) => {
                 socket.emit('scan-complete', { networks });
             } else {
                 // Scan des devices (par défaut)
+                console.log(`🔍 Démarrage du scan des devices en mode: ${mode}`);
+                console.log(`🔌 Instance io disponible: ${io ? 'OUI' : 'NON'}`);
+                console.log(`🔌 Socket ID: ${socket.id}`);
+
                 const scanner = new ImprovedDeviceScanner(io);
                 const rawDevices = await scanner.scanConnectedDevices(mode);
 
@@ -65,6 +69,7 @@ io.on('connection', (socket) => {
                 const dataFormatter = new DataFormatter();
                 const devices = dataFormatter.formatDevices(rawDevices);
 
+                console.log(`✅ Scan terminé: ${devices.length} appareils détectés`);
                 socket.emit('scan-complete', { devices });
             }
         } catch (error) {

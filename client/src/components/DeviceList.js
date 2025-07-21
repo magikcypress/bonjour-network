@@ -7,13 +7,12 @@ const SCAN_STEPS = {
     fast: [
         { id: 'arp', name: 'Scan ARP', description: 'Détection des appareils via table ARP', icon: Wifi },
         { id: 'netstat', name: 'Scan netstat', description: 'Connexions réseau actives', icon: Wifi },
-        { id: 'ifconfig', name: 'Scan ifconfig', description: 'Interfaces réseau', icon: Wifi }
-        // Pas d'identification Mistral AI en mode rapide
+        { id: 'dns', name: 'Résolution DNS', description: 'Résolution DNS inversée', icon: Wifi }
     ],
     complete: [
         { id: 'arp', name: 'Scan ARP', description: 'Détection des appareils via table ARP', icon: Wifi },
         { id: 'netstat', name: 'Scan netstat', description: 'Connexions réseau actives', icon: Wifi },
-        { id: 'ifconfig', name: 'Scan ifconfig', description: 'Interfaces réseau', icon: Wifi },
+        { id: 'dns', name: 'Résolution DNS', description: 'Résolution DNS inversée', icon: Wifi },
         { id: 'ping', name: 'Ping sweep', description: 'Découverte active sur 254 adresses', icon: Search },
         { id: 'nmap', name: 'Scan nmap', description: 'Découverte avec nmap (si disponible)', icon: Search },
         { id: 'bonjour', name: 'Scan Bonjour', description: 'Services réseau (HTTP, SSH, etc.)', icon: Monitor },
@@ -42,6 +41,28 @@ function DeviceList({
     const [currentStep, setCurrentStep] = useState(null);
     const [completedSteps, setCompletedSteps] = useState(new Set());
     const [copiedText, setCopiedText] = useState(null);
+
+    // Récupérer l'état de connectivité depuis window.connectivity si pas disponible en props
+    const [localConnectivity, setLocalConnectivity] = useState(connectivity);
+
+    useEffect(() => {
+        const updateConnectivity = () => {
+            if (window.connectivity) {
+                setLocalConnectivity(window.connectivity);
+            }
+        };
+
+        // Mettre à jour immédiatement
+        updateConnectivity();
+
+        // Écouter les changements de connectivité
+        const interval = setInterval(updateConnectivity, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Utiliser la connectivité locale si disponible, sinon celle des props
+    const currentConnectivity = localConnectivity.socket !== undefined ? localConnectivity : connectivity;
 
     // Validation des données reçues
     const validatedDevices = React.useMemo(() => {
@@ -119,7 +140,7 @@ function DeviceList({
 
     // Gestionnaire de démarrage de scan
     const handleStartScan = async (mode = scanMode) => {
-        if (!connectivity.socket) {
+        if (!currentConnectivity.socket) {
             console.warn('⚠️ Socket.IO non disponible pour le scan');
             return;
         }
@@ -248,7 +269,7 @@ function DeviceList({
                     <div className="flex items-center space-x-4">
                         <button
                             onClick={() => handleStartScan('fast')}
-                            disabled={scanProgress?.isActive || !connectivity.socket}
+                            disabled={scanProgress?.isActive || !currentConnectivity.socket}
                             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Search className="w-4 h-4 mr-2" />
@@ -256,7 +277,7 @@ function DeviceList({
                         </button>
                         <button
                             onClick={() => handleStartScan('complete')}
-                            disabled={scanProgress?.isActive || !connectivity.socket}
+                            disabled={scanProgress?.isActive || !currentConnectivity.socket}
                             className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Zap className="w-4 h-4 mr-2" />
@@ -303,7 +324,7 @@ function DeviceList({
                 </div>
 
                 {/* Indicateur de connectivité */}
-                {!connectivity.socket && (
+                {!currentConnectivity.socket && (
                     <div className="mt-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
                         <div className="flex items-center">
                             <AlertCircle className="w-4 h-4 mr-2" />
@@ -485,7 +506,7 @@ function DeviceList({
                     <p className="text-sm text-gray-500 mb-4">
                         Lancez un scan pour découvrir les appareils connectés au réseau
                     </p>
-                    {connectivity.socket && (
+                    {currentConnectivity.socket && (
                         <button
                             onClick={() => handleStartScan('fast')}
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

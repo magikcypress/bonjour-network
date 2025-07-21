@@ -60,7 +60,7 @@ async function testAutoScanInvalid() {
         if (!toggleFound) {
             console.log('⚠️ Bouton mode automatique non trouvé, recherche alternative...');
             // Chercher par classe ou attribut
-            const autoToggle = await page.$('[data-testid="auto-toggle"], .toggle-switch, input[type="checkbox"]');
+            const autoToggle = await page.$('[button.bg-gradient-to-r], .bg-gradient-to-r from-green-500 to-emerald-500, button.bg-gradient-to-r');
             if (autoToggle) {
                 await autoToggle.click();
                 console.log('✅ Mode automatique activé (méthode alternative)');
