@@ -396,5 +396,53 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 [![GitHub forks](https://img.shields.io/github/forks/magikcypress/bonjour-network?style=social)](https://github.com/magikcypress/bonjour-network/network/members)
 [![GitHub issues](https://img.shields.io/github/issues/magikcypress/bonjour-network)](https://github.com/magikcypress/bonjour-network/issues)
 [![GitHub license](https://img.shields.io/github/license/magikcypress/bonjour-network)](https://github.com/magikcypress/bonjour-network/blob/main/LICENSE)
+[![npm audit](https://img.shields.io/badge/security-npm%20audit-brightgreen)](https://docs.npmjs.com/cli/v8/commands/npm-audit)
 
 </div>
+
+---
+
+## 🛡️ Sécurité & Vulnérabilités npm
+
+### Vérification automatique
+
+- Le backend est protégé contre les vulnérabilités connues grâce à `npm audit fix`.
+- Le frontend (React) peut présenter des vulnérabilités liées à `react-scripts` et ses dépendances indirectes. Celles-ci sont courantes et généralement sans impact direct sur l'application en production.
+
+### Conseils de maintenance
+
+- **Vérifiez régulièrement les vulnérabilités** :
+
+  ```bash
+  npm audit
+  cd client && npm audit
+  ```
+
+- **Corrigez automatiquement ce qui peut l'être** :
+
+  ```bash
+  npm audit fix
+  cd client && npm audit fix
+  ```
+
+- **Pour les vulnérabilités persistantes côté client** :
+  - Surveillez les mises à jour de `react-scripts` ou envisagez une migration vers [Vite](https://vitejs.dev/) pour une chaîne de build moderne et plus sûre.
+  - Consultez la [documentation officielle de Create React App](https://create-react-app.dev/docs/updating-to-new-releases/) pour les bonnes pratiques de mise à jour.
+
+### Mise à jour des dépendances
+
+- Pour mettre à jour toutes les dépendances :
+
+  ```bash
+  npm update
+  cd client && npm update
+  ```
+
+- Pour forcer la correction (attention aux breaking changes) :
+
+  ```bash
+  npm audit fix --force
+  cd client && npm audit fix --force
+  ```
+
+---

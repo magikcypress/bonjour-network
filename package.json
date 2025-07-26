@@ -12,6 +12,7 @@
         "install-all": "npm install && cd server && npm install && cd ../client && npm install",
         "test": "jest",
         "test:integration": "jest --testPathPattern=tests/",
+        "test:all": "node run-tests.js",
         "test:security": "node server/security/security-test.js",
         "test:performance": "node tests/test-performance.js",
         "lint": "eslint .",
@@ -32,9 +33,11 @@
     "license": "MIT",
     "devDependencies": {
         "concurrently": "^8.2.2",
-        "jest": "^29.7.0",
         "eslint": "^8.57.0",
-        "prettier": "^3.2.5"
+        "jest": "^29.7.0",
+        "prettier": "^3.2.5",
+        "puppeteer": "^24.15.0",
+        "socket.io-client": "^4.8.1"
     },
     "engines": {
         "node": ">=18.0.0",

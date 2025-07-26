@@ -1,14 +1,26 @@
 {
-  "96E840": {
-    "manufacturer": "LG Electronics",
-    "confidence": 0.75,
-    "addedAt": "2025-07-26T11:01:42.466Z",
-    "mac": "96:e8:40:ee:aa:2e"
+  "48E15C": {
+    "manufacturer": "Samsung Electronics",
+    "confidence": 0.8,
+    "addedAt": "2025-07-26T11:36:53.179Z",
+    "mac": "48:e1:5c:aa:5c:15"
   },
   "B827EB": {
     "manufacturer": "Raspberry Pi Foundation",
     "confidence": 0.95,
-    "addedAt": "2025-07-26T11:01:42.474Z",
+    "addedAt": "2025-07-26T11:36:53.245Z",
     "mac": "b8:27:eb:e6:42:2d"
+  },
+  "96E840": {
+    "manufacturer": "LG Electronics",
+    "confidence": 0.75,
+    "addedAt": "2025-07-26T11:36:53.307Z",
+    "mac": "96:e8:40:ee:aa:2e"
+  },
+  "BCD074": {
+    "manufacturer": "Xiaomi Corporation",
+    "confidence": 0.7,
+    "addedAt": "2025-07-26T11:36:53.311Z",
+    "mac": "bc:d0:74:51:d8:2f"
   }
 }
