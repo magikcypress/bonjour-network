@@ -73,25 +73,40 @@ class ImprovedDeviceScanner {
 
     async initializeNetworkInfo() {
         try {
-            // Obtenir l'IP locale et la plage réseau
-            const result = await CommandValidator.safeExec('ifconfig en0');
+            // Obtenir l'IP locale et la plage réseau (Linux)
+            let result = await CommandValidator.safeExec('ip route get 1.1.1.1');
             if (result.success) {
-                const lines = result.stdout.split('\n');
-                for (const line of lines) {
-                    if (line.includes('inet ')) {
-                        const match = line.match(/inet (\d+\.\d+\.\d+\.\d+)/);
-                        if (match) {
-                            this.localIp = match[1];
-                            const parts = this.localIp.split('.');
-                            this.networkRange = `${parts[0]}.${parts[1]}.${parts[2]}.0`;
-                            break;
+                const match = result.stdout.match(/src (\d+\.\d+\.\d+\.\d+)/);
+                if (match) {
+                    this.localIp = match[1];
+                    const parts = this.localIp.split('.');
+                    this.networkRange = `${parts[0]}.${parts[1]}.${parts[2]}.0`;
+                }
+            }
+
+            // Fallback avec ifconfig si ip route échoue
+            if (!this.localIp) {
+                result = await CommandValidator.safeExec('ifconfig');
+                if (result.success) {
+                    const lines = result.stdout.split('\n');
+                    for (const line of lines) {
+                        if (line.includes('inet ') && !line.includes('127.0.0.1')) {
+                            const match = line.match(/inet (\d+\.\d+\.\d+\.\d+)/);
+                            if (match) {
+                                this.localIp = match[1];
+                                const parts = this.localIp.split('.');
+                                this.networkRange = `${parts[0]}.${parts[1]}.${parts[2]}.0`;
+                                break;
+                            }
                         }
                     }
                 }
             }
 
-            // Obtenir la gateway (simplifié)
-            this.gateway = this.networkRange ? this.networkRange.replace('.0', '.1') : null;
+            // Obtenir la gateway
+            if (this.networkRange) {
+                this.gateway = this.networkRange.replace('.0', '.1');
+            }
 
             console.log(`🌐 Informations réseau: IP=${this.localIp}, Réseau=${this.networkRange}, Gateway=${this.gateway}`);
         } catch (error) {

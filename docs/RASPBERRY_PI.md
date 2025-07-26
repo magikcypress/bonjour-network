@@ -43,7 +43,11 @@ sudo apt install -y \
     arping \
     iputils-ping \
     wireless-tools \
-    wpasupplicant
+    wpasupplicant \
+    arp-scan \
+    network-manager \
+    iw \
+    iwconfig
 ```
 
 ## 🚀 **Installation**
@@ -118,10 +122,34 @@ sudo nano /etc/dhcpcd.conf
 # Donner les permissions pour le scan réseau
 sudo setcap cap_net_raw,cap_net_admin=eip $(which nmap)
 sudo setcap cap_net_raw,cap_net_admin=eip $(which arping)
+sudo setcap cap_net_raw,cap_net_admin=eip $(which arp-scan)
 
 # Vérifier les permissions
 getcap $(which nmap)
 getcap $(which arping)
+getcap $(which arp-scan)
+```
+
+### **4. Outils de scan WiFi**
+
+```bash
+# Installation des outils WiFi manquants
+sudo apt install -y \
+    wireless-tools \
+    wpasupplicant \
+    network-manager \
+    iw \
+    iwconfig
+
+# Vérifier l'installation
+which iwlist
+which nmcli
+which iw
+
+# Test des outils WiFi
+iwconfig
+iw dev
+nmcli device wifi list
 ```
 
 ## 🐳 **Docker sur Raspberry Pi**
@@ -272,6 +300,50 @@ sudo setcap cap_net_raw,cap_net_admin=eip $(which arping)
 
 # Tester le scan
 sudo nmap -sn 192.168.1.0/24
+
+#### **4. Outils de scan manquants**
+
+```bash
+# Vérifier les outils installés
+which arp-scan
+which nmap
+which iwlist
+which nmcli
+which iw
+
+# Installer les outils manquants
+sudo apt install -y arp-scan nmap wireless-tools network-manager
+
+# Vérifier les permissions
+sudo setcap cap_net_raw,cap_net_admin=eip $(which arp-scan)
+sudo setcap cap_net_raw,cap_net_admin=eip $(which nmap)
+
+# Test des outils
+arp-scan --localnet
+iwlist scan
+nmcli device wifi list
+```
+
+#### **5. Problèmes de scan WiFi**
+
+```bash
+# Vérifier l'interface WiFi
+iwconfig
+iw dev
+
+# Activer le mode monitor (si nécessaire)
+sudo iw dev wlan0 set type monitor
+sudo iw dev wlan0 set type managed
+
+# Vérifier les permissions WiFi
+sudo usermod -aG netdev $USER
+sudo usermod -aG dialout $USER
+
+# Redémarrer les services réseau
+sudo systemctl restart NetworkManager
+sudo systemctl restart wpa_supplicant
+```
+
 ```
 
 #### **2. Mémoire insuffisante**

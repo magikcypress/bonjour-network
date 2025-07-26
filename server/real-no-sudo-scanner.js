@@ -8,49 +8,31 @@ class RealNoSudoWiFiScanner {
         try {
             console.log('🔍 Démarrage du scan WiFi réel sans sudo...');
 
-            // FORCER l'utilisation d'airport pour éviter les problèmes de qualité
-            console.log('🎯 Utilisation forcée de la méthode airport pour la cohérence...');
-            const airportNetworks = await this.scanWithAirport();
-            if (airportNetworks.length > 0) {
-                console.log(`✅ Scan airport réussi: ${airportNetworks.length} réseaux détectés`);
-                return airportNetworks;
+            // Essayer iwlist (Linux)
+            console.log('🎯 Utilisation de iwlist pour Linux...');
+            const iwlistNetworks = await this.scanWithIwlist();
+            if (iwlistNetworks.length > 0) {
+                console.log(`✅ Scan iwlist réussi: ${iwlistNetworks.length} réseaux détectés`);
+                return iwlistNetworks;
             }
 
-            // Si airport échoue, essayer system_profiler mais avec des valeurs par défaut cohérentes
-            console.log('⚠️ Airport échoué, utilisation de system_profiler avec correction...');
-            const profilerNetworks = await this.scanWithSystemProfiler();
-            if (profilerNetworks.length > 0) {
-                // Corriger les données pour qu'elles passent la validation
-                const correctedNetworks = profilerNetworks.map(network => ({
-                    ...network,
-                    signalStrength: network.signalStrength || 30,
-                    frequency: network.frequency || '2412',
-                    channel: network.channel || 1,
-                    security: network.security || 'WPA2',
-                    bssid: network.bssid || null
-                }));
-                console.log(`✅ Scan system_profiler corrigé: ${correctedNetworks.length} réseaux détectés`);
-                return correctedNetworks;
+            // Essayer nmcli (Linux)
+            console.log('⚠️ Iwlist échoué, utilisation de nmcli...');
+            const nmcliNetworks = await this.scanWithNmcli();
+            if (nmcliNetworks.length > 0) {
+                console.log(`✅ Scan nmcli réussi: ${nmcliNetworks.length} réseaux détectés`);
+                return nmcliNetworks;
             }
 
-            // Dernier recours avec networksetup
-            console.log('⚠️ System_profiler échoué, utilisation de networksetup...');
-            const networksetupNetworks = await this.scanWithNetworksetup();
-            if (networksetupNetworks.length > 0) {
-                // Corriger les données pour qu'elles passent la validation
-                const correctedNetworks = networksetupNetworks.map(network => ({
-                    ...network,
-                    signalStrength: network.signalStrength || 30,
-                    frequency: network.frequency || '2412',
-                    channel: network.channel || 1,
-                    security: network.security || 'WPA2',
-                    bssid: network.bssid || null
-                }));
-                console.log(`✅ Scan networksetup corrigé: ${correctedNetworks.length} réseaux détectés`);
-                return correctedNetworks;
+            // Essayer iw (Linux)
+            console.log('⚠️ Nmcli échoué, utilisation de iw...');
+            const iwNetworks = await this.scanWithIw();
+            if (iwNetworks.length > 0) {
+                console.log(`✅ Scan iw réussi: ${iwNetworks.length} réseaux détectés`);
+                return iwNetworks;
             }
 
-            console.log('❌ Aucune méthode de scan n\'a fonctionné');
+            console.log('❌ Aucune méthode de scan Linux n\'a fonctionné');
             return [];
         } catch (error) {
             console.error('Erreur lors du scan WiFi:', error);
@@ -58,226 +40,186 @@ class RealNoSudoWiFiScanner {
         }
     }
 
-    async scanWithAirport() {
+    async scanWithIwlist() {
         try {
-            // Essayer airport -s (peut fonctionner sans sudo sur certains systèmes)
-            const { stdout } = await execAsync('airport -s');
-            return this.parseAirportOutput(stdout);
+            // Utiliser iwlist pour scanner les réseaux WiFi
+            const { stdout } = await execAsync('iwlist scan 2>/dev/null || iwlist wlan0 scan 2>/dev/null');
+            return this.parseIwlistOutput(stdout);
         } catch (error) {
-            console.log('airport -s non disponible sans sudo');
+            console.log('iwlist non disponible ou échoué');
             return [];
         }
     }
 
-    async scanWithSystemProfiler() {
+    async scanWithNmcli() {
         try {
-            // Utiliser system_profiler pour obtenir les infos WiFi
-            const { stdout } = await execAsync('system_profiler SPAirPortDataType');
-            return this.parseSystemProfilerOutput(stdout);
+            // Utiliser nmcli pour scanner les réseaux WiFi
+            const { stdout } = await execAsync('nmcli device wifi list');
+            return this.parseNmcliOutput(stdout);
         } catch (error) {
-            console.log('system_profiler non disponible');
+            console.log('nmcli non disponible ou échoué');
             return [];
         }
     }
 
-    async scanWithNetworksetup() {
+    async scanWithIw() {
         try {
-            // Utiliser networksetup pour obtenir les infos réseau
-            const { stdout } = await execAsync('networksetup -listallnetworkservices');
-            const services = stdout.split('\n').filter(line => line.trim() && !line.includes('*'));
-            const networks = [];
-
-            for (const service of services) {
-                if (service.includes('Wi-Fi') || service.includes('AirPort')) {
-                    const networkInfo = await this.getNetworkInfoForService(service.trim());
-                    if (networkInfo) {
-                        networks.push(networkInfo);
-                    }
-                }
-            }
-
-            return networks;
+            // Utiliser iw pour scanner les réseaux WiFi
+            const { stdout } = await execAsync('iw dev wlan0 scan 2>/dev/null || iw dev scan 2>/dev/null');
+            return this.parseIwOutput(stdout);
         } catch (error) {
-            console.log('networksetup non disponible');
+            console.log('iw non disponible ou échoué');
             return [];
         }
     }
 
-    async getNetworkInfoForService(serviceName) {
-        try {
-            // Valider le nom de service avant exécution
-            if (!CommandValidator.isValidNetworkService(serviceName)) {
-                console.warn(`🚫 Nom de service non autorisé: ${serviceName}`);
-                return null;
-            }
-
-            // Construire et valider la commande
-            const command = `networksetup -getinfo "${serviceName}"`;
-            if (!CommandValidator.validate(command)) {
-                console.warn(`🚫 Commande non autorisée: ${command}`);
-                return null;
-            }
-
-            // Obtenir les infos du service WiFi
-            const { stdout } = await execAsync(command);
-            const lines = stdout.split('\n');
-            const info = {
-                ssid: serviceName,
-                security: 'Unknown',
-                signalStrength: 30,
-                frequency: '2412',
-                channel: 1,
-                lastSeen: new Date().toISOString()
-            };
-
-            for (const line of lines) {
-                if (line.includes('IP address')) {
-                    const ipMatch = line.match(/IP address: (.+)/);
-                    if (ipMatch) {
-                        info.ip = ipMatch[1];
-                    }
-                }
-            }
-
-            return info;
-        } catch (error) {
-            return null;
-        }
-    }
-
-    parseAirportOutput(output) {
-        const lines = output.split('\n');
+    parseIwlistOutput(output) {
         const networks = [];
-
-        // Ignorer les lignes d'en-tête et les avertissements
-        for (const line of lines) {
-            if (line.trim() && !line.includes('SSID') && !line.includes('Warning') && !line.includes('deprecated')) {
-                const parts = line.split(/\s+/);
-                if (parts.length >= 6) {
-                    const signalStrength = this.convertRSSIToPercentage(parts[2]);
-                    const frequency = this.channelToFrequency(parts[3]);
-
-                    // S'assurer que les données sont valides
-                    if (signalStrength !== 50 && frequency !== 'N/A') {
-                        const network = {
-                            ssid: parts[0],
-                            bssid: parts[1],
-                            rssi: parts[2],
-                            channel: parts[3],
-                            security: parts[4],
-                            signalStrength: signalStrength,
-                            frequency: frequency,
-                            lastSeen: new Date().toISOString()
-                        };
-                        networks.push(network);
-                    }
-                }
-            }
-        }
-
-        return networks;
-    }
-
-    parseSystemProfilerOutput(output) {
         const lines = output.split('\n');
-        const networks = [];
-        let currentNetwork = null;
-        let inOtherNetworks = false;
+        let currentNetwork = {};
 
         for (const line of lines) {
             const trimmedLine = line.trim();
 
-            // Détecter la section "Other Local Wi-Fi Networks"
-            if (trimmedLine.includes('Other Local Wi-Fi Networks:')) {
-                inOtherNetworks = true;
-                continue;
-            }
-
-            // Détecter un nouveau réseau (nom se terminant par ':')
-            if (inOtherNetworks && trimmedLine.endsWith(':') &&
-                !trimmedLine.includes('PHY Mode') &&
-                !trimmedLine.includes('Channel') &&
-                !trimmedLine.includes('Network Type') &&
-                !trimmedLine.includes('Security')) {
-
-                if (currentNetwork) {
-                    networks.push(currentNetwork);
+            if (trimmedLine.includes('Cell')) {
+                if (Object.keys(currentNetwork).length > 0) {
+                    networks.push(this.formatNetwork(currentNetwork));
                 }
-
-                currentNetwork = {
-                    ssid: trimmedLine.slice(0, -1).trim(), // Enlever le ':'
-                    bssid: null, // Ne pas définir de valeur par défaut
-                    security: null, // Ne pas définir de valeur par défaut
-                    signalStrength: null, // Ne pas définir de valeur par défaut
-                    frequency: null, // Ne pas définir de valeur par défaut
-                    channel: null, // Ne pas définir de valeur par défaut
-                    lastSeen: new Date().toISOString()
-                };
-            } else if (currentNetwork && trimmedLine.includes('Channel:')) {
-                const channelMatch = trimmedLine.match(/Channel: (\d+)/);
-                if (channelMatch) {
-                    currentNetwork.channel = channelMatch[1];
-                    currentNetwork.frequency = this.channelToFrequency(channelMatch[1]);
+                currentNetwork = {};
+            } else if (trimmedLine.includes('ESSID:')) {
+                const essid = trimmedLine.split('"')[1] || 'Unknown';
+                currentNetwork.ssid = essid;
+            } else if (trimmedLine.includes('Address:')) {
+                const bssid = trimmedLine.split('Address:')[1]?.trim();
+                currentNetwork.bssid = bssid;
+            } else if (trimmedLine.includes('Channel:')) {
+                const channel = parseInt(trimmedLine.split('Channel:')[1]?.trim()) || 1;
+                currentNetwork.channel = channel;
+                currentNetwork.frequency = this.channelToFrequency(channel);
+            } else if (trimmedLine.includes('Quality=')) {
+                const qualityMatch = trimmedLine.match(/Quality=(\d+)\/\d+/);
+                if (qualityMatch) {
+                    const quality = parseInt(qualityMatch[1]);
+                    currentNetwork.signalStrength = quality;
+                    currentNetwork.rssi = this.convertQualityToRSSI(quality);
                 }
-            } else if (currentNetwork && trimmedLine.includes('Security:')) {
-                const securityMatch = trimmedLine.match(/Security: (.+)/);
-                if (securityMatch) {
-                    currentNetwork.security = securityMatch[1];
-                }
-            } else if (currentNetwork && trimmedLine.includes('Signal / Noise:')) {
-                const signalMatch = trimmedLine.match(/Signal \/ Noise: (-\d+) dBm/);
-                if (signalMatch) {
-                    const rssi = signalMatch[1];
-                    currentNetwork.rssi = rssi;
-                    currentNetwork.signalStrength = this.convertRSSIToPercentage(rssi);
-                }
-            }
-
-            // Définir des valeurs par défaut pour les champs manquants
-            if (currentNetwork) {
-                if (currentNetwork.signalStrength === null) {
-                    currentNetwork.signalStrength = 30;
-                }
-                if (currentNetwork.security === null) {
-                    currentNetwork.security = 'Unknown';
-                }
-                if (currentNetwork.channel === null) {
-                    currentNetwork.channel = 1;
-                    currentNetwork.frequency = '2412';
-                }
-                if (currentNetwork.bssid === null) {
-                    currentNetwork.bssid = null; // Garder null pour éviter la validation BSSID
-                }
+            } else if (trimmedLine.includes('Encryption key:')) {
+                const encrypted = trimmedLine.includes('on');
+                currentNetwork.security = encrypted ? 'WPA2' : 'Open';
             }
         }
 
-        if (currentNetwork) {
-            networks.push(currentNetwork);
+        // Ajouter le dernier réseau
+        if (Object.keys(currentNetwork).length > 0) {
+            networks.push(this.formatNetwork(currentNetwork));
         }
 
         return networks;
     }
 
-    convertRSSIToPercentage(rssi) {
-        const rssiValue = parseInt(rssi);
-        if (isNaN(rssiValue)) return 50;
+    parseNmcliOutput(output) {
+        const networks = [];
+        const lines = output.split('\n').slice(1); // Ignorer l'en-tête
 
-        // Conversion RSSI vers pourcentage
-        const percentage = Math.max(0, Math.min(100, ((rssiValue + 100) * 100) / 70));
-        return Math.round(percentage);
+        for (const line of lines) {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length >= 8) {
+                const network = {
+                    ssid: parts[0],
+                    bssid: parts[1],
+                    mode: parts[2],
+                    channel: parseInt(parts[3]) || 1,
+                    frequency: this.channelToFrequency(parseInt(parts[3]) || 1),
+                    signalStrength: parseInt(parts[4]) || 30,
+                    security: parts[5] || 'WPA2',
+                    rssi: this.convertQualityToRSSI(parseInt(parts[4]) || 30)
+                };
+                networks.push(this.formatNetwork(network));
+            }
+        }
+
+        return networks;
+    }
+
+    parseIwOutput(output) {
+        const networks = [];
+        const lines = output.split('\n');
+        let currentNetwork = {};
+
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+
+            if (trimmedLine.includes('BSS')) {
+                if (Object.keys(currentNetwork).length > 0) {
+                    networks.push(this.formatNetwork(currentNetwork));
+                }
+                currentNetwork = {};
+            } else if (trimmedLine.includes('SSID:')) {
+                const ssid = trimmedLine.split('SSID:')[1]?.trim();
+                currentNetwork.ssid = ssid;
+            } else if (trimmedLine.includes('BSSID:')) {
+                const bssid = trimmedLine.split('BSSID:')[1]?.trim();
+                currentNetwork.bssid = bssid;
+            } else if (trimmedLine.includes('freq:')) {
+                const freq = parseInt(trimmedLine.split('freq:')[1]?.trim());
+                currentNetwork.frequency = freq;
+                currentNetwork.channel = this.frequencyToChannel(freq);
+            } else if (trimmedLine.includes('signal:')) {
+                const signal = parseInt(trimmedLine.split('signal:')[1]?.trim());
+                currentNetwork.rssi = signal;
+                currentNetwork.signalStrength = this.convertRSSIToPercentage(signal);
+            }
+        }
+
+        // Ajouter le dernier réseau
+        if (Object.keys(currentNetwork).length > 0) {
+            networks.push(this.formatNetwork(currentNetwork));
+        }
+
+        return networks;
+    }
+
+    formatNetwork(network) {
+        return {
+            ssid: network.ssid || 'Unknown',
+            bssid: network.bssid || null,
+            mode: 'infrastructure',
+            channel: network.channel || 1,
+            frequency: network.frequency || 2412,
+            signal_level: network.rssi || -70,
+            signalStrength: network.signalStrength || 30,
+            quality: network.signalStrength || 30,
+            security: network.security || 'WPA2',
+            security_flags: [network.security || 'WPA2-PSK-CCMP']
+        };
+    }
+
+    convertQualityToRSSI(quality) {
+        // Convertir une qualité de 0-100 en RSSI approximatif
+        return Math.round(-100 + (quality * 0.7));
+    }
+
+    convertRSSIToPercentage(rssi) {
+        // Convertir RSSI en pourcentage de signal
+        if (rssi >= -50) return 100;
+        if (rssi <= -100) return 0;
+        return Math.round(2 * (rssi + 100));
     }
 
     channelToFrequency(channel) {
-        const channelNum = parseInt(channel);
-        if (isNaN(channelNum)) return 'N/A';
-
-        if (channelNum >= 1 && channelNum <= 14) {
-            return (2407 + (channelNum * 5)).toString(); // 2.4GHz
-        } else if (channelNum >= 36 && channelNum <= 165) {
-            return (5000 + (channelNum * 5)).toString(); // 5GHz
+        // Convertir canal en fréquence (2.4GHz)
+        if (channel >= 1 && channel <= 13) {
+            return 2407 + (channel * 5);
         }
+        return 2412; // Canal 1 par défaut
+    }
 
-        return 'N/A';
+    frequencyToChannel(freq) {
+        // Convertir fréquence en canal
+        if (freq >= 2412 && freq <= 2484) {
+            return Math.round((freq - 2407) / 5);
+        }
+        return 1;
     }
 }
 

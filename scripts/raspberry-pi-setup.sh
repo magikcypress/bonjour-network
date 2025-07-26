@@ -1,178 +1,173 @@
 #!/bin/bash
 
-# Script d'installation Bonjour Network pour Raspberry Pi
+# 🍓 Script d'installation Bonjour Network pour Raspberry Pi
+# Compatible avec Raspberry Pi OS et Ubuntu Server
 
 set -e
 
-echo "🍓 Installation Bonjour Network sur Raspberry Pi"
-echo "============================================="
-
-# Couleurs pour l'affichage
+# Couleurs pour les messages
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Fonction pour afficher les messages
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+print_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    echo -e "${GREEN}✅ $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}❌ $1${NC}"
 }
 
-# Vérifier que c'est bien un Raspberry Pi
+print_header() {
+    echo -e "${BLUE}"
+    echo "=========================================="
+    echo "🍓 Installation Bonjour Network - Raspberry Pi"
+    echo "=========================================="
+    echo -e "${NC}"
+}
+
+# Vérifier si on est sur un Raspberry Pi
 check_raspberry_pi() {
-    print_status "Vérification du matériel..."
-    
-    if [ -f /proc/cpuinfo ] && grep -q "Raspberry Pi" /proc/cpuinfo; then
-        print_success "Raspberry Pi détecté"
-        MODEL=$(grep "Model" /proc/cpuinfo | cut -d: -f2 | xargs)
-        print_status "Modèle: $MODEL"
-    else
-        print_warning "Ce script est optimisé pour Raspberry Pi"
+    if [ -f /proc/cpuinfo ]; then
+        if grep -q "Raspberry Pi" /proc/cpuinfo; then
+            print_success "Raspberry Pi détecté"
+            return 0
+        fi
     fi
+    
+    if [ -f /etc/rpi-issue ]; then
+        print_success "Raspberry Pi OS détecté"
+        return 0
+    fi
+    
+    print_warning "Pas de Raspberry Pi détecté, mais installation possible"
+    return 0
 }
 
 # Mise à jour du système
 update_system() {
-    print_status "Mise à jour du système..."
-    sudo apt update && sudo apt upgrade -y
+    print_info "Mise à jour du système..."
+    sudo apt update
+    sudo apt upgrade -y
     print_success "Système mis à jour"
+}
+
+# Installation des dépendances système
+install_system_dependencies() {
+    print_info "Installation des dépendances système..."
+    
+    # Outils de base
+    sudo apt install -y \
+        curl \
+        wget \
+        git \
+        build-essential \
+        python3 \
+        python3-pip
+    
+    # Outils réseau essentiels
+    sudo apt install -y \
+        net-tools \
+        iputils-ping \
+        arping \
+        nmap \
+        arp-scan \
+        wireless-tools \
+        wpasupplicant \
+        network-manager \
+        iw \
+        iwconfig
+    
+    print_success "Dépendances système installées"
 }
 
 # Installation de Node.js
 install_nodejs() {
-    print_status "Installation de Node.js..."
+    print_info "Installation de Node.js..."
     
     # Vérifier si Node.js est déjà installé
     if command -v node &> /dev/null; then
         NODE_VERSION=$(node --version)
-        print_status "Node.js déjà installé: $NODE_VERSION"
-    else
-        # Installation de Node.js 18+
-        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-        sudo apt-get install -y nodejs
-        print_success "Node.js installé"
+        print_info "Node.js déjà installé: $NODE_VERSION"
+        
+        # Vérifier la version
+        if [[ "$NODE_VERSION" == v18* ]] || [[ "$NODE_VERSION" == v20* ]]; then
+            print_success "Version Node.js compatible"
+            return 0
+        else
+            print_warning "Version Node.js ancienne, mise à jour..."
+        fi
     fi
     
-    # Vérifier la version
-    NODE_VERSION=$(node --version)
-    NPM_VERSION=$(npm --version)
-    print_status "Node.js: $NODE_VERSION, npm: $NPM_VERSION"
+    # Installation de Node.js 18+
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    
+    print_success "Node.js installé: $(node --version)"
 }
 
 # Installation de Docker (optionnel)
 install_docker() {
-    print_status "Installation de Docker..."
+    print_info "Installation de Docker..."
     
     if command -v docker &> /dev/null; then
-        print_status "Docker déjà installé"
-    else
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh get-docker.sh
-        sudo usermod -aG docker $USER
-        print_success "Docker installé"
-        print_warning "Redémarrez votre session pour utiliser Docker"
+        print_info "Docker déjà installé"
+        return 0
     fi
-}
-
-# Installation des outils réseau
-install_network_tools() {
-    print_status "Installation des outils réseau..."
     
-    sudo apt install -y \
-        net-tools \
-        nmap \
-        arping \
-        iputils-ping \
-        wireless-tools \
-        wpasupplicant \
-        htop \
-        iotop
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
+    sudo usermod -aG docker $USER
     
-    print_success "Outils réseau installés"
+    print_success "Docker installé"
 }
 
 # Configuration des permissions réseau
 setup_network_permissions() {
-    print_status "Configuration des permissions réseau..."
+    print_info "Configuration des permissions réseau..."
     
-    # Donner les permissions pour le scan réseau
-    sudo setcap cap_net_raw,cap_net_admin=eip $(which nmap) 2>/dev/null || true
-    sudo setcap cap_net_raw,cap_net_admin=eip $(which arping) 2>/dev/null || true
+    # Permissions pour les outils de scan
+    if command -v nmap &> /dev/null; then
+        sudo setcap cap_net_raw,cap_net_admin=eip $(which nmap)
+    fi
+    
+    if command -v arping &> /dev/null; then
+        sudo setcap cap_net_raw,cap_net_admin=eip $(which arping)
+    fi
+    
+    if command -v arp-scan &> /dev/null; then
+        sudo setcap cap_net_raw,cap_net_admin=eip $(which arp-scan)
+    fi
+    
+    # Permissions utilisateur
+    sudo usermod -aG netdev $USER
+    sudo usermod -aG dialout $USER
     
     print_success "Permissions réseau configurées"
 }
 
-# Optimisation du système
-optimize_system() {
-    print_status "Optimisation du système..."
-    
-    # Augmenter la mémoire swap
-    if [ -f /etc/dphys-swapfile ]; then
-        sudo dphys-swapfile swapoff
-        sudo sed -i 's/CONF_SWAPSIZE=.*/CONF_SWAPSIZE=2048/' /etc/dphys-swapfile
-        sudo dphys-swapfile setup
-        sudo dphys-swapfile swapon
-        print_success "Swap configuré à 2GB"
-    fi
-    
-    # Optimiser la mémoire
-    echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
-    
-    # Désactiver les services inutiles
-    sudo systemctl disable bluetooth 2>/dev/null || true
-    sudo systemctl disable avahi-daemon 2>/dev/null || true
-    
-    print_success "Système optimisé"
-}
-
-# Installation de Bonjour Network
-install_wifi_tracker() {
-    print_status "Installation de Bonjour Network..."
-    
-    # Vérifier si le projet existe déjà
-    if [ -d "bonjour-network" ]; then
-        print_status "Projet existant détecté, mise à jour..."
-        cd bonjour-network
-        git pull
-    else
-        # Cloner le projet
-        git clone https://github.com/magikcypress/bonjour-network.git
-        cd bonjour-network
-    fi
-    
-    # Installation des dépendances
-    npm run install-all
-    
-    # Créer les dossiers nécessaires
-    mkdir -p logs
-    mkdir -p data
-    
-    print_success "Bonjour Network installé"
-}
-
-# Configuration de l'environnement
+# Configuration des variables d'environnement
 setup_environment() {
-    print_status "Configuration de l'environnement..."
+    print_info "Configuration des variables d'environnement..."
     
-    # Créer le fichier .env
-    if [ ! -f "server/.env" ]; then
-        cat > server/.env << EOF
+    # Obtenir l'IP du Raspberry Pi
+    RASPBERRY_PI_IP=$(hostname -I | awk '{print $1}')
+    
+    # Configuration serveur
+    cat > server/.env << EOF
 NODE_ENV=production
 PORT=5001
-CORS_ORIGIN=http://localhost:3001
+CORS_ORIGIN=http://localhost:3000,http://localhost:3001,http://localhost:5001,http://${RASPBERRY_PI_IP}:3000,http://${RASPBERRY_PI_IP}:3001
 REQUEST_TIMEOUT=60000
 SCAN_TIMEOUT=30000
 WIFI_SCAN_INTERVAL=60000
@@ -180,221 +175,191 @@ DEVICE_SCAN_INTERVAL=120000
 LOG_LEVEL=warn
 NODE_OPTIONS=--max-old-space-size=512
 EOF
-        print_success "Fichier .env créé"
+
+    # Configuration client
+    cat > client/.env << EOF
+REACT_APP_API_URL=http://${RASPBERRY_PI_IP}:5001/api
+REACT_APP_SOCKET_URL=http://${RASPBERRY_PI_IP}:5001
+EOF
+
+    print_success "Variables d'environnement configurées pour IP: $RASPBERRY_PI_IP"
+}
+
+# Installation des dépendances Node.js
+install_node_dependencies() {
+    print_info "Installation des dépendances Node.js..."
+    
+    # Installation des dépendances serveur
+    cd server
+    npm install
+    cd ..
+    
+    # Installation des dépendances client
+    cd client
+    npm install
+    cd ..
+    
+    # Installation des dépendances racine
+    npm install
+    
+    print_success "Dépendances Node.js installées"
+}
+
+# Test des outils de scan
+test_scan_tools() {
+    print_info "Test des outils de scan..."
+    
+    local tests_passed=0
+    local total_tests=0
+    
+    # Test arp-scan
+    if command -v arp-scan &> /dev/null; then
+        total_tests=$((total_tests + 1))
+        if sudo arp-scan --localnet --timeout=1000 | grep -q "Interface"; then
+            print_success "arp-scan fonctionne"
+            tests_passed=$((tests_passed + 1))
+        else
+            print_warning "arp-scan ne fonctionne pas correctement"
+        fi
     else
-        print_status "Fichier .env existe déjà"
+        print_warning "arp-scan non installé"
     fi
+    
+    # Test nmap
+    if command -v nmap &> /dev/null; then
+        total_tests=$((total_tests + 1))
+        if nmap -sn 127.0.0.1 | grep -q "Nmap scan report"; then
+            print_success "nmap fonctionne"
+            tests_passed=$((tests_passed + 1))
+        else
+            print_warning "nmap ne fonctionne pas correctement"
+        fi
+    else
+        print_warning "nmap non installé"
+    fi
+    
+    # Test iwlist
+    if command -v iwlist &> /dev/null; then
+        total_tests=$((total_tests + 1))
+        if iwlist scan 2>/dev/null | grep -q "Cell"; then
+            print_success "iwlist fonctionne"
+            tests_passed=$((tests_passed + 1))
+        else
+            print_warning "iwlist ne fonctionne pas correctement"
+        fi
+    else
+        print_warning "iwlist non installé"
+    fi
+    
+    # Test nmcli
+    if command -v nmcli &> /dev/null; then
+        total_tests=$((total_tests + 1))
+        if nmcli device wifi list 2>/dev/null | grep -q "SSID"; then
+            print_success "nmcli fonctionne"
+            tests_passed=$((tests_passed + 1))
+        else
+            print_warning "nmcli ne fonctionne pas correctement"
+        fi
+    else
+        print_warning "nmcli non installé"
+    fi
+    
+    print_info "Tests de scan: $tests_passed/$total_tests réussis"
+}
+
+# Création du script de démarrage
+create_startup_script() {
+    print_info "Création du script de démarrage..."
+    
+    cat > start-bonjour-network.sh << 'EOF'
+#!/bin/bash
+
+# Script de démarrage Bonjour Network pour Raspberry Pi
+cd "$(dirname "$0")"
+
+# Configuration pour Raspberry Pi
+export NODE_OPTIONS="--max-old-space-size=512"
+export WIFI_SCAN_INTERVAL=60000
+export DEVICE_SCAN_INTERVAL=120000
+
+# Démarrer l'application
+npm run dev
+EOF
+
+    chmod +x start-bonjour-network.sh
+    print_success "Script de démarrage créé"
 }
 
 # Configuration du service systemd
 setup_systemd_service() {
-    print_status "Configuration du service systemd..."
+    print_info "Configuration du service systemd..."
     
-    # Créer l'utilisateur si nécessaire
-    if ! id "bonjour-network" &>/dev/null; then
-        sudo adduser --disabled-password --gecos "" bonjour-network
-        print_success "Utilisateur bonjour-network créé"
-    fi
-    
-    # Créer le service systemd
     sudo tee /etc/systemd/system/bonjour-network.service > /dev/null << EOF
 [Unit]
-Description=WiFi Tracker
+Description=Bonjour Network
 After=network.target
 
 [Service]
 Type=simple
-User=bonjour-network
+User=$USER
 WorkingDirectory=$(pwd)
-ExecStart=/usr/bin/node server/index.js
+Environment=NODE_OPTIONS=--max-old-space-size=512
+ExecStart=/usr/bin/npm run dev
 Restart=always
 RestartSec=10
-Environment=NODE_ENV=production
-Environment=NODE_OPTIONS=--max-old-space-size=512
 
 [Install]
 WantedBy=multi-user.target
 EOF
-    
-    # Activer le service
+
     sudo systemctl daemon-reload
-    sudo systemctl enable bonjour-network
-    sudo systemctl start bonjour-network
+    sudo systemctl enable bonjour-network.service
     
     print_success "Service systemd configuré"
 }
 
-# Configuration du firewall
-setup_firewall() {
-    print_status "Configuration du firewall..."
-    
-    # Installation d'ufw
-    sudo apt install -y ufw
-    
-    # Configuration de base
-    sudo ufw default deny incoming
-    sudo ufw default allow outgoing
-    sudo ufw allow ssh
-    sudo ufw allow 5001/tcp
-    sudo ufw --force enable
-    
-    print_success "Firewall configuré"
-}
-
-# Test de l'installation
-test_installation() {
-    print_status "Test de l'installation..."
-    
-    # Attendre que le service démarre
-    sleep 10
-    
-    # Tester l'API
-    if curl -s http://localhost:5001/api/networks > /dev/null; then
-        print_success "API accessible"
-    else
-        print_warning "API non accessible, vérifiez les logs"
-    fi
-    
-    # Vérifier le service
-    if sudo systemctl is-active --quiet bonjour-network; then
-        print_success "Service actif"
-    else
-        print_error "Service inactif"
-    fi
-}
-
 # Affichage des informations finales
 show_final_info() {
+    print_header
+    print_success "Installation terminée avec succès !"
+    
+    RASPBERRY_PI_IP=$(hostname -I | awk '{print $1}')
+    
     echo ""
-    echo "🎉 Bonjour Network installé avec succès sur Raspberry Pi !"
-    echo "======================================================"
+    echo "🌐 Accès à l'application:"
+    echo "   - Interface: http://$RASPBERRY_PI_IP:3000"
+    echo "   - API: http://$RASPBERRY_PI_IP:5001"
     echo ""
-    echo "📱 Accès à l'application:"
-    echo "   http://$(hostname -I | awk '{print $1}'):5001"
+    echo "🚀 Commandes utiles:"
+    echo "   - Démarrer: npm run dev"
+    echo "   - Service: sudo systemctl start bonjour-network"
+    echo "   - Logs: sudo journalctl -u bonjour-network -f"
     echo ""
-    echo "🔧 Commandes utiles:"
-    echo "   - Voir les logs: sudo journalctl -u bonjour-network -f"
-    echo "   - Redémarrer: sudo systemctl restart bonjour-network"
-    echo "   - Statut: sudo systemctl status bonjour-network"
-    echo "   - Arrêter: sudo systemctl stop bonjour-network"
+    echo "📋 Outils installés:"
+    echo "   - arp-scan: $(which arp-scan 2>/dev/null || echo 'Non installé')"
+    echo "   - nmap: $(which nmap 2>/dev/null || echo 'Non installé')"
+    echo "   - iwlist: $(which iwlist 2>/dev/null || echo 'Non installé')"
+    echo "   - nmcli: $(which nmcli 2>/dev/null || echo 'Non installé')"
     echo ""
-    echo "📊 Monitoring:"
-    echo "   - Ressources: htop"
-    echo "   - Température: vcgencmd measure_temp"
-    echo "   - Espace disque: df -h"
-    echo ""
-    echo "🔒 Sécurité:"
-    echo "   - Firewall: sudo ufw status"
-    echo "   - Logs: tail -f logs/combined.log"
-    echo ""
-    echo "📁 Dossiers créés:"
-    echo "   - $(pwd)/logs/ : Logs de l'application"
-    echo "   - $(pwd)/data/ : Données persistantes"
-    echo ""
-    echo "🚀 Le service démarre automatiquement au boot"
-    echo ""
+    echo "🔧 Redémarrage recommandé pour appliquer toutes les permissions"
 }
 
-# Menu principal
+# Fonction principale
 main() {
-    echo ""
-    echo "Choisissez une option:"
-    echo "1) Installation complète (recommandé)"
-    echo "2) Installation sans Docker"
-    echo "3) Installation Docker uniquement"
-    echo "4) Configuration système uniquement"
-    echo "5) Vérifier l'installation"
-    echo "6) Démarrer le service"
-    echo "7) Arrêter le service"
-    echo "8) Voir les logs"
-    echo "q) Quitter"
-    echo ""
-    read -p "Votre choix: " choice
-    
-    case $choice in
-        1)
-            check_raspberry_pi
-            update_system
-            install_nodejs
-            install_docker
-            install_network_tools
-            setup_network_permissions
-            optimize_system
-            install_wifi_tracker
-            setup_environment
-            setup_systemd_service
-            setup_firewall
-            test_installation
-            show_final_info
-            ;;
-        2)
-            check_raspberry_pi
-            update_system
-            install_nodejs
-            install_network_tools
-            setup_network_permissions
-            optimize_system
-            install_wifi_tracker
-            setup_environment
-            setup_systemd_service
-            test_installation
-            show_final_info
-            ;;
-        3)
-            install_docker
-            install_wifi_tracker
-            setup_environment
-            ;;
-        4)
-            check_raspberry_pi
-            update_system
-            install_network_tools
-            setup_network_permissions
-            optimize_system
-            setup_firewall
-            ;;
-        5)
-            test_installation
-            ;;
-        6)
-            sudo systemctl start bonjour-network
-            print_success "Service démarré"
-            ;;
-        7)
-            sudo systemctl stop bonjour-network
-            print_success "Service arrêté"
-            ;;
-        8)
-            sudo journalctl -u bonjour-network -f
-            ;;
-        q|Q)
-            echo "Au revoir !"
-            exit 0
-            ;;
-        *)
-            print_error "Option invalide"
-            main
-            ;;
-    esac
+    print_header
+    check_raspberry_pi
+    update_system
+    install_system_dependencies
+    install_nodejs
+    install_docker
+    setup_network_permissions
+    setup_environment
+    install_node_dependencies
+    test_scan_tools
+    create_startup_script
+    setup_systemd_service
+    show_final_info
 }
 
 # Exécution du script
-if [[ $1 == "--auto" ]]; then
-    # Mode automatique pour l'installation complète
-    check_raspberry_pi
-    update_system
-    install_nodejs
-    install_docker
-    install_network_tools
-    setup_network_permissions
-    optimize_system
-    install_wifi_tracker
-    setup_environment
-    setup_systemd_service
-    setup_firewall
-    test_installation
-    show_final_info
-else
-    # Mode interactif
-    main
-fi 
+main "$@" 
