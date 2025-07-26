@@ -12,7 +12,7 @@ class CommandValidator {
         'ip',
 
         // Commandes WiFi macOS
-        'airport', 'system_profiler', 'networksetup', 'wdutil',
+        'airport', 'system_profiler', 'networksetup', 'wdutil', 'route',
 
         // Commandes WiFi Linux/Raspberry Pi
         'iwlist', 'nmcli', 'iw', 'iwconfig',
@@ -37,9 +37,11 @@ class CommandValidator {
         'dns-sd': ['-B', '_http._tcp', '_https._tcp', '_ssh._tcp', '_ftp._tcp', '_smb._tcp', '_airplay._tcp', 'local', '2>/dev/null'],
         'airport': ['-s'],
         'system_profiler': ['SPAirPortDataType'],
-        'networksetup': ['-listallnetworkservices', '-getinfo', 'Wi-Fi', 'AirPort', 'Ethernet'],
+        'networksetup': ['-listallnetworkservices', '-getinfo', 'Wi-Fi', 'AirPort', 'Ethernet', 'AX88179A'],
+        '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport': ['-s'],
         'arping': ['-I', 'en0', 'wlan0', 'eth0', '-c', '1', '-W', '1000'],
         'scutil': ['--nwi'],
+        'route': ['-n', 'get', '1.1.1.1'],
         'which': ['nmap', 'arping', 'arp-scan', 'iwlist', 'nmcli', 'iw'],
         'wdutil': ['info'],
         // Commandes Linux/Raspberry Pi
@@ -49,7 +51,9 @@ class CommandValidator {
         'iwconfig': ['wlan0', 'eth0'],
         'arp-scan': ['--localnet', '--timeout', '1000', '--interface', 'wlan0', 'eth0'],
         'sudo': ['arp-scan', 'nmap', 'arping', 'iwlist', 'iw', '--localnet', '--timeout', '1000', '-sn', '--max-retries', '1', '--host-timeout', '1s', '192.168.1.0/24', 'scan', 'wlan0', 'eth0', '-I', '-c', '1', '-W', '1000'],
-        'ip': ['route', 'get', 'addr', 'show', 'link', '1.1.1.1', '192.168.1.1']
+        'ip': ['route', 'get', 'addr', 'show', 'link', '1.1.1.1', '192.168.1.1'],
+        'airport': ['-s'],
+        'system_profiler': ['SPAirPortDataType']
     };
 
     /**

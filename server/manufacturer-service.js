@@ -66,9 +66,23 @@ class ManufacturerService {
         const macPrefix = mac.replace(/:/g, '').substring(0, 6).toUpperCase();
 
         if (this.manufacturers[macPrefix]) {
+            // Mapper les fabricants vers les types d'appareils
+            const deviceTypeMap = {
+                'Raspberry Pi Foundation': 'Single Board Computer',
+                'Synology Inc.': 'Network Attached Storage',
+                'Apple Inc.': 'Mobile Device',
+                'Samsung Electronics': 'Smart TV',
+                'LG Electronics': 'Smart Device',
+                'Xiaomi Corporation': 'IoT Device',
+                'TP-Link Technologies': 'Network Router'
+            };
+
+            const manufacturer = this.manufacturers[macPrefix].manufacturer;
+            const deviceType = deviceTypeMap[manufacturer] || 'Unknown Device';
+
             return {
-                manufacturer: this.manufacturers[macPrefix].manufacturer,
-                deviceType: this.manufacturers[macPrefix].deviceType,
+                manufacturer: manufacturer,
+                deviceType: deviceType,
                 confidence: 0.9, // Haute confiance pour la base locale
                 identified: true,
                 source: 'local'

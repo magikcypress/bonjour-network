@@ -206,11 +206,33 @@ export const useDataManager = (activeTab = 'networks') => {
                 };
 
                 const handleScanComplete = (data) => {
-                    setData(prev => ({
-                        ...prev,
-                        networks: data.networks || [],
-                        networkCount: data.networks?.length || 0
-                    }));
+                    console.log('📊 Données reçues du scan:', data);
+
+                    // Traiter les réseaux ET les appareils
+                    setData(prev => {
+                        const newData = {
+                            ...prev,
+                            networks: data.networks || prev.networks || [],
+                            devices: data.devices || prev.devices || [],
+                            networkCount: data.networks?.length || prev.networkCount || 0,
+                            deviceCount: data.devices?.length || prev.deviceCount || 0
+                        };
+
+                        console.log('🔄 Mise à jour des données:', {
+                            devices: newData.devices?.length || 0,
+                            networks: newData.networks?.length || 0
+                        });
+
+                        // Log des fabricants pour debug
+                        if (newData.devices && newData.devices.length > 0) {
+                            console.log('📱 Appareils avec fabricants:');
+                            newData.devices.forEach((device, index) => {
+                                console.log(`  ${index + 1}. ${device.ip}: ${device.manufacturer || 'N/A'} (${device.deviceType || 'N/A'})`);
+                            });
+                        }
+
+                        return newData;
+                    });
 
                     setScanProgress({
                         isActive: false,
@@ -219,7 +241,7 @@ export const useDataManager = (activeTab = 'networks') => {
                         message: 'Scan terminé'
                     });
 
-                    console.log(`✅ Scan terminé: ${data.networks?.length || 0} réseaux`);
+                    console.log(`✅ Scan terminé: ${data.networks?.length || 0} réseaux, ${data.devices?.length || 0} appareils`);
 
                     // NE PAS déconnecter WebSocket après le scan en temps réel
                     // socketService.disconnect();

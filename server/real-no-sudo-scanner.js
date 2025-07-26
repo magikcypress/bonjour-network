@@ -2,43 +2,46 @@ const { exec } = require('child_process');
 const util = require('util');
 const execAsync = util.promisify(exec);
 const CommandValidator = require('./security/command-validator');
-const NetworkDetector = require('./utils/network-detector');
+const OSDetector = require('./utils/os-detector');
 
 class RealNoSudoWiFiScanner {
     async scanNetworks() {
         try {
             console.log('🔍 Démarrage du scan WiFi avec détection automatique...');
 
-            // Détecter le type de connexion
-            const networkDetector = new NetworkDetector();
-            const connectionInfo = await networkDetector.detectConnectionType();
+            // Détecter l'OS
+            const osDetector = new OSDetector();
+            const osInfo = await osDetector.detectOS();
+            console.log(`🖥️ Système détecté: ${osInfo.platform} (${osInfo.arch})`);
 
-            console.log(networkDetector.getConnectionInfo());
+            // Scan WiFi direct selon l'OS
+            console.log('📶 Tentative de scan WiFi...');
 
-            // Si on est sur Ethernet, retourner un message informatif
-            if (connectionInfo.connectionType === 'ethernet') {
-                console.log('📡 Connexion Ethernet détectée - Scan WiFi non disponible');
-                return [{
-                    ssid: 'Connexion Ethernet',
-                    bssid: null,
-                    mode: 'ethernet',
-                    channel: 0,
-                    frequency: 0,
-                    signal_level: 0,
-                    signalStrength: 100,
-                    quality: 100,
-                    security: 'Ethernet',
-                    security_flags: ['Ethernet'],
-                    note: 'Raspberry Pi connecté via Ethernet - Utilisez le scan d\'appareils pour détecter les devices'
-                }];
-            }
+            if (osInfo.isMacOS) {
+                // Utiliser les commandes macOS
+                console.log('🍎 Utilisation des commandes macOS...');
 
-            // Si on est sur WiFi, essayer le scan WiFi
-            if (connectionInfo.connectionType === 'wifi') {
-                console.log('📶 Connexion WiFi détectée - Tentative de scan WiFi...');
+                // Essayer airport
+                console.log('🎯 Utilisation de airport...');
+                const airportNetworks = await this.scanWithAirport();
+                if (airportNetworks.length > 0) {
+                    console.log(`✅ Scan airport réussi: ${airportNetworks.length} réseaux détectés`);
+                    return airportNetworks;
+                }
+
+                // Essayer system_profiler
+                console.log('⚠️ Airport échoué, utilisation de system_profiler...');
+                const profilerNetworks = await this.scanWithSystemProfiler();
+                if (profilerNetworks.length > 0) {
+                    console.log(`✅ Scan system_profiler réussi: ${profilerNetworks.length} réseaux détectés`);
+                    return profilerNetworks;
+                }
+            } else if (osInfo.isLinux || osInfo.isRaspberryPi) {
+                // Utiliser les commandes Linux
+                console.log('🐧 Utilisation des commandes Linux...');
 
                 // Essayer iwlist (Linux)
-                console.log('🎯 Utilisation de iwlist pour Linux...');
+                console.log('🎯 Utilisation de iwlist...');
                 const iwlistNetworks = await this.scanWithIwlist();
                 if (iwlistNetworks.length > 0) {
                     console.log(`✅ Scan iwlist réussi: ${iwlistNetworks.length} réseaux détectés`);
@@ -109,6 +112,36 @@ class RealNoSudoWiFiScanner {
             return this.parseNmcliOutput(stdout);
         } catch (error) {
             console.log('nmcli non disponible ou échoué');
+            return [];
+        }
+    }
+
+    async scanWithAirport() {
+        try {
+            // Utiliser airport pour scanner les réseaux WiFi sur macOS
+            const result = await CommandValidator.safeExec('/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -s');
+            if (!result.success) {
+                console.log('airport non disponible ou échoué:', result.stderr);
+                return [];
+            }
+            return this.parseAirportOutput(result.stdout);
+        } catch (error) {
+            console.log('airport non disponible ou échoué:', error.message);
+            return [];
+        }
+    }
+
+    async scanWithSystemProfiler() {
+        try {
+            // Utiliser system_profiler pour obtenir les informations WiFi sur macOS
+            const result = await CommandValidator.safeExec('system_profiler SPAirPortDataType');
+            if (!result.success) {
+                console.log('system_profiler non disponible ou échoué:', result.stderr);
+                return [];
+            }
+            return this.parseSystemProfilerOutput(result.stdout);
+        } catch (error) {
+            console.log('system_profiler non disponible ou échoué:', error.message);
             return [];
         }
     }
@@ -193,6 +226,94 @@ class RealNoSudoWiFiScanner {
             }
         }
 
+        return networks;
+    }
+
+    parseAirportOutput(output) {
+        const networks = [];
+        const lines = output.split('\n').slice(1); // Ignorer l'en-tête
+
+        for (const line of lines) {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length >= 6) {
+                const network = {
+                    ssid: parts[0],
+                    bssid: parts[1],
+                    rssi: parseInt(parts[2]) || -70,
+                    channel: parseInt(parts[3]) || 1,
+                    security: parts[4] || 'Open',
+                    frequency: this.channelToFrequency(parseInt(parts[3]) || 1),
+                    signalStrength: this.convertRSSIToPercentage(parseInt(parts[2]) || -70),
+                    quality: Math.abs(parseInt(parts[2]) || -70),
+                    mode: 'infrastructure',
+                    security_flags: [parts[4] || 'Open']
+                };
+                networks.push(this.formatNetwork(network));
+            }
+        }
+
+        return networks;
+    }
+
+    parseSystemProfilerOutput(output) {
+        const networks = [];
+        const lines = output.split('\n');
+        let currentNetwork = {};
+        let inOtherNetworks = false;
+
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+
+            // Détecter la section "Other Local Wi-Fi Networks"
+            if (trimmedLine.includes('Other Local Wi-Fi Networks:')) {
+                inOtherNetworks = true;
+                continue;
+            }
+
+            // Si on est dans la section des autres réseaux
+            if (inOtherNetworks && trimmedLine.includes(':') && !trimmedLine.includes('PHY Mode:') && !trimmedLine.includes('Channel:') && !trimmedLine.includes('Network Type:') && !trimmedLine.includes('Security:') && !trimmedLine.includes('Signal / Noise:') && !trimmedLine.includes('MAC Address') && !trimmedLine.includes('Supported Channels') && !trimmedLine.includes('Current Network Information') && !trimmedLine.includes('awdl0')) {
+                // Nouveau réseau détecté (ligne avec SSID:)
+                if (Object.keys(currentNetwork).length > 0) {
+                    networks.push(this.formatNetwork(currentNetwork));
+                }
+                currentNetwork = {};
+
+                // Extraire le nom du réseau (SSID)
+                const ssid = trimmedLine.split(':')[0]?.trim();
+                currentNetwork.ssid = ssid;
+            } else if (inOtherNetworks && currentNetwork.ssid) {
+                // Parser les propriétés du réseau
+                if (trimmedLine.includes('PHY Mode:')) {
+                    const phyMode = trimmedLine.split('PHY Mode:')[1]?.trim();
+                    currentNetwork.phyMode = phyMode;
+                } else if (trimmedLine.includes('Channel:')) {
+                    const channelMatch = trimmedLine.match(/Channel:\s*(\d+)/);
+                    if (channelMatch) {
+                        const channel = parseInt(channelMatch[1]);
+                        currentNetwork.channel = channel;
+                        currentNetwork.frequency = this.channelToFrequency(channel);
+                    }
+                } else if (trimmedLine.includes('Security:')) {
+                    const security = trimmedLine.split('Security:')[1]?.trim();
+                    currentNetwork.security = security;
+                    currentNetwork.security_flags = [security];
+                } else if (trimmedLine.includes('Signal / Noise:')) {
+                    const signalMatch = trimmedLine.match(/Signal \/ Noise:\s*([-\d]+)\s*dBm/);
+                    if (signalMatch) {
+                        const rssi = parseInt(signalMatch[1]);
+                        currentNetwork.rssi = rssi;
+                        currentNetwork.signalStrength = this.convertRSSIToPercentage(rssi);
+                    }
+                }
+            }
+        }
+
+        // Ajouter le dernier réseau
+        if (Object.keys(currentNetwork).length > 0) {
+            networks.push(this.formatNetwork(currentNetwork));
+        }
+
+        console.log(`📶 Réseaux détectés via system_profiler: ${networks.length}`);
         return networks;
     }
 

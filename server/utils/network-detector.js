@@ -2,6 +2,7 @@ const { exec } = require('child_process');
 const util = require('util');
 const execAsync = util.promisify(exec);
 const CommandValidator = require('../security/command-validator');
+const OSDetector = require('./os-detector');
 
 class NetworkDetector {
     constructor() {
@@ -9,6 +10,7 @@ class NetworkDetector {
         this.activeInterface = null;
         this.wifiInterfaces = [];
         this.ethernetInterfaces = [];
+        this.osDetector = new OSDetector();
     }
 
     /**
@@ -19,11 +21,22 @@ class NetworkDetector {
         try {
             console.log('🔍 Détection du type de connexion réseau...');
 
-            // Obtenir toutes les interfaces réseau
-            await this.getNetworkInterfaces();
+            // Détecter l'OS
+            const osInfo = await this.osDetector.detectOS();
 
-            // Détecter l'interface active
-            await this.detectActiveInterface();
+            // Obtenir toutes les interfaces réseau selon l'OS
+            if (osInfo.isMacOS) {
+                await this.getNetworkInterfacesMacOS();
+            } else {
+                await this.getNetworkInterfaces();
+            }
+
+            // Détecter l'interface active selon l'OS
+            if (osInfo.isMacOS) {
+                await this.detectActiveInterfaceMacOS();
+            } else {
+                await this.detectActiveInterface();
+            }
 
             // Déterminer le type de connexion
             const result = {
@@ -55,7 +68,7 @@ class NetworkDetector {
     }
 
     /**
-     * Obtient toutes les interfaces réseau
+     * Obtient toutes les interfaces réseau (Linux)
      */
     async getNetworkInterfaces() {
         try {
@@ -95,7 +108,45 @@ class NetworkDetector {
     }
 
     /**
-     * Détecte l'interface réseau active
+     * Obtient toutes les interfaces réseau (macOS)
+     */
+    async getNetworkInterfacesMacOS() {
+        try {
+            // Utiliser networksetup pour obtenir les interfaces
+            const result = await CommandValidator.safeExec('networksetup -listallnetworkservices');
+            if (!result.success) {
+                throw new Error('Impossible d\'obtenir les interfaces réseau');
+            }
+
+            const lines = result.stdout.split('\n');
+            this.wifiInterfaces = [];
+            this.ethernetInterfaces = [];
+
+            for (const line of lines) {
+                const service = line.trim();
+                if (service && service !== 'An asterisk (*) denotes that a network service is disabled.') {
+                    // Vérifier le type d'interface
+                    const typeResult = await CommandValidator.safeExec(`networksetup -getinfo "${service}"`);
+                    if (typeResult.success) {
+                        if (typeResult.stdout.includes('Wi-Fi') || typeResult.stdout.includes('AirPort')) {
+                            this.wifiInterfaces.push(service);
+                        } else if (typeResult.stdout.includes('Ethernet')) {
+                            this.ethernetInterfaces.push(service);
+                        }
+                    }
+                }
+            }
+
+            console.log(`📶 Interfaces WiFi trouvées: ${this.wifiInterfaces.join(', ')}`);
+            console.log(`🔗 Interfaces Ethernet trouvées: ${this.ethernetInterfaces.join(', ')}`);
+
+        } catch (error) {
+            console.error('Erreur lors de l\'obtention des interfaces macOS:', error);
+        }
+    }
+
+    /**
+     * Détecte l'interface réseau active (Linux)
      */
     async detectActiveInterface() {
         try {
@@ -125,6 +176,42 @@ class NetworkDetector {
 
         } catch (error) {
             console.error('Erreur lors de la détection de l\'interface active:', error);
+            this.activeInterface = null;
+            this.connectionType = 'unknown';
+        }
+    }
+
+    /**
+     * Détecte l'interface réseau active (macOS)
+     */
+    async detectActiveInterfaceMacOS() {
+        try {
+            // Obtenir l'interface active via route
+            const result = await CommandValidator.safeExec('route -n get 1.1.1.1');
+            if (!result.success) {
+                throw new Error('Impossible d\'obtenir l\'interface active');
+            }
+
+            // Parser la sortie pour obtenir l'interface
+            const match = result.stdout.match(/interface:\s+(\w+)/);
+            if (match) {
+                this.activeInterface = match[1];
+
+                // Déterminer le type de connexion
+                if (this.wifiInterfaces.includes(this.activeInterface)) {
+                    this.connectionType = 'wifi';
+                } else if (this.ethernetInterfaces.includes(this.activeInterface)) {
+                    this.connectionType = 'ethernet';
+                } else {
+                    this.connectionType = 'unknown';
+                }
+            } else {
+                this.activeInterface = null;
+                this.connectionType = 'unknown';
+            }
+
+        } catch (error) {
+            console.error('Erreur lors de la détection de l\'interface active macOS:', error);
             this.activeInterface = null;
             this.connectionType = 'unknown';
         }

@@ -2,25 +2,31 @@
   "48E15C": {
     "manufacturer": "Samsung Electronics",
     "confidence": 0.8,
-    "addedAt": "2025-07-26T16:26:32.218Z",
+    "addedAt": "2025-07-26T17:12:19.517Z",
     "mac": "48:e1:5c:aa:5c:15"
-  },
-  "B827EB": {
-    "manufacturer": "Raspberry Pi Foundation",
-    "confidence": 0.95,
-    "addedAt": "2025-07-26T16:26:32.483Z",
-    "mac": "b8:27:eb:e6:42:2d"
   },
   "96E840": {
     "manufacturer": "LG Electronics",
     "confidence": 0.75,
-    "addedAt": "2025-07-26T16:26:32.573Z",
+    "addedAt": "2025-07-26T17:12:19.603Z",
     "mac": "96:e8:40:ee:aa:2e"
+  },
+  "B827EB": {
+    "manufacturer": "Raspberry Pi Foundation",
+    "confidence": 0.95,
+    "addedAt": "2025-07-26T17:12:19.612Z",
+    "mac": "b8:27:eb:e6:42:2d"
   },
   "BCD074": {
     "manufacturer": "Xiaomi Corporation",
     "confidence": 0.7,
-    "addedAt": "2025-07-26T16:26:32.581Z",
+    "addedAt": "2025-07-26T17:12:19.696Z",
     "mac": "bc:d0:74:51:d8:2f"
+  },
+  "6CBFB5": {
+    "manufacturer": "Synology Inc.",
+    "confidence": 0.9,
+    "addedAt": "2025-07-26T17:19:13.722Z",
+    "mac": "6C:BF:B5:12:34:56"
   }
 }

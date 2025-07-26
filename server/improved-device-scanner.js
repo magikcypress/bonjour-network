@@ -12,16 +12,26 @@ class ImprovedDeviceScanner {
         this.networkRange = null;
         this.gateway = null;
         this.localIp = null;
+        this.totalSteps = 0;
+        this.completedSteps = 0;
     }
 
     emitProgress(step, status, message, data = null, command = null) {
+        // Calculer le pourcentage de progression
+        if (status === 'start') {
+            this.completedSteps++;
+        }
+
+        const progressPercentage = this.totalSteps > 0 ? Math.round((this.completedSteps / this.totalSteps) * 100) : 0;
+
         const progressData = {
             step,
             status,
             message,
             timestamp: new Date().toISOString(),
             data,
-            command
+            command,
+            progress: progressPercentage
         };
 
         console.log(`📡 Émission de progression:`, progressData);
@@ -33,12 +43,17 @@ class ImprovedDeviceScanner {
             console.warn(`⚠️ Pas d'instance io disponible pour émettre la progression`);
         }
 
-        console.log(`📡 [${step}] ${status}: ${message}${command ? ` (${command})` : ''}`);
+        console.log(`📡 [${step}] ${status}: ${message}${command ? ` (${command})` : ''} - Progression: ${progressPercentage}%`);
     }
 
     async scanConnectedDevices(scanMode = 'complete') {
         try {
             console.log(`🔍 DEBUG: scanConnectedDevices appelé avec scanMode = "${scanMode}"`);
+
+            // Initialiser le compteur de progression
+            this.completedSteps = 0;
+            this.totalSteps = scanMode === 'fast' ? 4 : 9; // 4 étapes pour fast, 9 pour complete
+
             this.emitProgress('scan', 'start', `Démarrage du scan ${scanMode} amélioré...`);
 
             // Détecter le type de connexion
@@ -244,30 +259,23 @@ class ImprovedDeviceScanner {
             // Identification Mistral AI - seulement en mode complet ou si explicitement demandé
             console.log(`🔍 DEBUG: Mode de scan = "${scanMode}" (type: ${typeof scanMode}), Appareils = ${devices.length}`);
 
-            if (scanMode === 'complete') {
-                console.log('🔍 DEBUG: Mode complet - Lancement identification Mistral AI');
-                this.emitProgress('mistral', 'start', 'Identification Mistral AI...', null, 'Mistral AI API');
+            // Identification Mistral AI pour tous les modes (fast et complete)
+            console.log(`🔍 DEBUG: Mode ${scanMode} - Lancement identification Mistral AI`);
+            this.emitProgress('mistral', 'start', 'Identification Mistral AI...', null, 'Mistral AI API');
 
-                try {
-                    const identifiedDevices = await this.identifyDevicesWithMistralAI(devices);
+            try {
+                const identifiedDevices = await this.identifyDevicesWithMistralAI(devices);
 
-                    // Re-prioriser après identification
-                    const finalDevices = this.prioritizeDevicesByQuality(identifiedDevices);
+                // Re-prioriser après identification
+                const finalDevices = this.prioritizeDevicesByQuality(identifiedDevices);
 
-                    this.emitProgress('mistral', 'success', `Identification: ${finalDevices.length} appareils`);
-                    return finalDevices;
-                } catch (error) {
-                    console.error('❌ Erreur lors de l\'identification Mistral AI:', error);
-                    this.emitProgress('mistral', 'error', `Erreur identification: ${error.message}`);
+                this.emitProgress('mistral', 'success', `Identification: ${finalDevices.length} appareils`);
+                return finalDevices;
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'identification Mistral AI:', error);
+                this.emitProgress('mistral', 'error', `Erreur identification: ${error.message}`);
 
-                    // En cas d'erreur, retourner les appareils sans identification
-                    const finalDevices = this.prioritizeDevicesByQuality(devices);
-                    return finalDevices;
-                }
-            } else {
-                // Mode fast - pas d'identification Mistral AI
-                console.log(`🔍 DEBUG: Mode rapide (${scanMode}) - Identification Mistral AI ignorée`);
-                this.emitProgress('mistral', 'skip', 'Identification Mistral AI ignorée (mode rapide)', null, 'Skipped');
+                // En cas d'erreur, retourner les appareils sans identification
                 const finalDevices = this.prioritizeDevicesByQuality(devices);
                 return finalDevices;
             }
@@ -721,6 +729,9 @@ class ImprovedDeviceScanner {
             const ManufacturerService = require('./manufacturer-service');
             const manufacturerService = new ManufacturerService();
 
+            // Initialiser le service de fabricants
+            await manufacturerService.loadManufacturers();
+
             // Timeout pour éviter le blocage (30 secondes max)
             const timeoutMs = 30000;
             const timeoutPromise = new Promise((_, reject) =>
@@ -759,15 +770,18 @@ class ImprovedDeviceScanner {
             const batchPromises = batch.map(async (device) => {
                 try {
                     const manufacturerInfo = await manufacturerService.identifyManufacturer(device.mac);
+                    console.log(`🔍 Résultat identification pour ${device.mac}:`, manufacturerInfo);
+
                     if (manufacturerInfo && manufacturerInfo.identified) {
                         // Fusion intelligente des informations fabricant
                         if (manufacturerInfo.manufacturer && manufacturerInfo.manufacturer !== 'Unknown Manufacturer') {
                             device.manufacturer = manufacturerInfo.manufacturer;
                         }
 
-                        // Ne pas écraser le deviceType existant, seulement si pas défini
-                        if (!device.deviceType || device.deviceType === 'Unknown' || device.deviceType === 'Unknown Device') {
-                            device.deviceType = manufacturerInfo.deviceType || device.deviceType;
+                        // Gérer les deux formats de deviceType (deviceType et device_type)
+                        const deviceType = manufacturerInfo.deviceType || manufacturerInfo.device_type;
+                        if (deviceType && deviceType !== 'Unknown Device') {
+                            device.deviceType = deviceType;
                         }
 
                         // Ajouter les informations de confiance
@@ -775,9 +789,9 @@ class ImprovedDeviceScanner {
                         device.manufacturerSource = manufacturerInfo.source || 'mistral';
                         device.manufacturerIdentified = manufacturerInfo.identified;
 
-                        console.log(`✅ Identifié: ${device.mac} → ${manufacturerInfo.manufacturer} (confiance: ${manufacturerInfo.confidence})`);
+                        console.log(`✅ Identifié: ${device.mac} → ${manufacturerInfo.manufacturer} (${deviceType}) (confiance: ${manufacturerInfo.confidence})`);
                     } else {
-                        console.log(`❌ Non identifié: ${device.mac}`);
+                        console.log(`❌ Non identifié: ${device.mac} - Raison:`, manufacturerInfo);
                         device.manufacturerIdentified = false;
                     }
                 } catch (error) {
