@@ -9,7 +9,9 @@ const corsConfig = {
             'http://localhost:3000',
             'http://localhost:3001',
             'http://127.0.0.1:3000',
-            'http://127.0.0.1:3001'
+            'http://127.0.0.1:3001',
+            'http://localhost:3000/',
+            'http://127.0.0.1:3000/'
         ],
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -19,7 +21,8 @@ const corsConfig = {
             'X-Requested-With',
             'Accept',
             'Origin',
-            'X-Client-Version'
+            'X-Client-Version',
+            'Cache-Control'
         ],
         exposedHeaders: [
             'X-Total-Count',
