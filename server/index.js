@@ -126,32 +126,40 @@ const limiter = rateLimit({
     }
 });
 
-// Middleware de sécurité (ordre important pour CORS)
-app.use(customCorsMiddleware);
+// Configuration CORS simplifiée pour le développement
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    next();
+});
+
+// Middleware de sécurité (après CORS)
 app.use(securityHeaders);
 app.use(requestSizeLimit);
 app.use(validateContentType);
-
-// Middleware CORS de fallback pour le développement
-if (process.env.NODE_ENV !== 'production') {
-    app.use((req, res, next) => {
-        res.header('Access-Control-Allow-Origin', '*');
-        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-
-        if (req.method === 'OPTIONS') {
-            return res.status(200).end();
-        }
-        next();
-    });
-}
 app.use(express.json({ limit: '1mb' }));
 
 // Appliquer le rate limiting
 app.use(limiter);
 
-// Validation des méthodes HTTP (après CORS pour permettre OPTIONS)
-app.use(validateHttpMethod);
+// Validation des méthodes HTTP (simplifiée)
+app.use((req, res, next) => {
+    const allowedMethods = ['GET', 'POST', 'OPTIONS'];
+
+    if (!allowedMethods.includes(req.method)) {
+        return res.status(405).json({
+            error: 'Méthode HTTP non autorisée',
+            code: 'METHOD_NOT_ALLOWED',
+            allowed: allowedMethods
+        });
+    }
+    next();
+});
 
 // Initialiser WiFi
 wifi.init({
