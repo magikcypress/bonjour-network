@@ -2,6 +2,7 @@ const CommandValidator = require('./security/command-validator');
 const { exec } = require('child_process');
 const util = require('util');
 const execAsync = util.promisify(exec);
+const NetworkDetector = require('./utils/network-detector');
 
 console.log('🔍 DEBUG: ImprovedDeviceScanner chargé avec modifications Mistral AI');
 
@@ -40,6 +41,16 @@ class ImprovedDeviceScanner {
             console.log(`🔍 DEBUG: scanConnectedDevices appelé avec scanMode = "${scanMode}"`);
             this.emitProgress('scan', 'start', `Démarrage du scan ${scanMode} amélioré...`);
 
+            // Détecter le type de connexion
+            const networkDetector = new NetworkDetector();
+            const connectionInfo = await networkDetector.detectConnectionType();
+
+            console.log(connectionInfo.getConnectionInfo());
+            this.emitProgress('network', 'info', `Type de connexion: ${connectionInfo.connectionType}`, {
+                connectionType: connectionInfo.connectionType,
+                activeInterface: connectionInfo.activeInterface
+            });
+
             // Initialiser les informations réseau
             await this.initializeNetworkInfo();
 
@@ -53,7 +64,8 @@ class ImprovedDeviceScanner {
             const result = await Promise.race([scanPromise, timeoutPromise]);
 
             this.emitProgress('scan', 'complete', `Scan ${scanMode} terminé avec succès`, {
-                deviceCount: result.length
+                deviceCount: result.length,
+                connectionType: connectionInfo.connectionType
             });
 
             if (this.io) {

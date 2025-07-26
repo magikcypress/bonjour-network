@@ -14,6 +14,7 @@ const ImprovedDeviceScanner = require('./improved-device-scanner');
 const MistralAIService = require('./mistral-ai-service');
 const ManufacturerService = require('./manufacturer-service');
 const DataFormatter = require('./utils/data-formatter');
+const NetworkDetector = require('./utils/network-detector');
 
 // Import des modules de sécurité
 const EnvironmentValidator = require('./config/environment');
@@ -171,6 +172,26 @@ wifi.init({
 // Routes API
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/network-info', async (req, res) => {
+    try {
+        const networkDetector = new NetworkDetector();
+        const connectionInfo = await networkDetector.detectConnectionType();
+
+        res.json({
+            connectionType: connectionInfo.connectionType,
+            activeInterface: connectionInfo.activeInterface,
+            wifiInterfaces: connectionInfo.wifiInterfaces,
+            ethernetInterfaces: connectionInfo.ethernetInterfaces,
+            canScanWifi: connectionInfo.canScanWifi,
+            canScanEthernet: connectionInfo.canScanEthernet,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Erreur lors de l\'obtention des infos réseau:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.get('/api/networks', async (req, res) => {
