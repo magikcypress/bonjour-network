@@ -23,7 +23,7 @@ const ScanProgress = ({ isVisible, onComplete }) => {
 
     useEffect(() => {
         if (isVisible && !socket) {
-            const newSocket = io('http://localhost:5001');
+            const newSocket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001');
             setSocket(newSocket);
 
             newSocket.on('scan-progress', (data) => {

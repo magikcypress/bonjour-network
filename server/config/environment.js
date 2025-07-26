@@ -19,7 +19,7 @@ class EnvironmentValidator {
         'LOG_LEVEL': 'info',
         'REQUEST_TIMEOUT': '30000',
         'SCAN_TIMEOUT': '10000',
-        'CORS_ORIGIN': 'http://localhost:3000,http://localhost:3001,http://localhost:5001'
+        'CORS_ORIGIN': 'http://localhost:3000,http://localhost:3001,http://localhost:5001,http://192.168.1.93:3000,http://192.168.1.93:3001'
     };
 
     // Validation des types et formats
