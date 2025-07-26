@@ -48,9 +48,9 @@ install_wifi_tools() {
         wpasupplicant \
         network-manager \
         iw \
-        iwconfig \
         arp-scan \
-        nmap
+        nmap \
+        iputils-arping
     
     print_success "Outils WiFi installés"
 }

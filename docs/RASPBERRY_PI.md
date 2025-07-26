@@ -40,7 +40,7 @@ sudo usermod -aG docker $USER
 sudo apt install -y \
     net-tools \
     nmap \
-    arping \
+    iputils-arping \
     iputils-ping \
     wireless-tools \
     wpasupplicant \
@@ -316,7 +316,7 @@ which nmcli
 which iw
 
 # Installer les outils manquants
-sudo apt install -y arp-scan nmap wireless-tools network-manager iw wpasupplicant
+sudo apt install -y arp-scan nmap wireless-tools network-manager iw wpasupplicant iputils-arping
 
 # Vérifier les permissions
 sudo setcap cap_net_raw,cap_net_admin=eip $(which arp-scan)

@@ -79,7 +79,7 @@ install_system_dependencies() {
     sudo apt install -y \
         net-tools \
         iputils-ping \
-        arping \
+        iputils-arping \
         nmap \
         arp-scan \
         wireless-tools \
