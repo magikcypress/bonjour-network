@@ -2,7 +2,8 @@ import axios from 'axios';
 
 class ApiService {
     constructor() {
-        this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+        // Forcer l'utilisation de localhost pour éviter les problèmes CORS
+        this.baseURL = 'http://localhost:5001/api';
         this.timeout = 15000;
         this.retryAttempts = 3;
         this.retryDelay = 1000;
