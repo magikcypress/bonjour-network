@@ -188,9 +188,9 @@ class NetworkDetector {
     }
 
     /**
-     * Génère un message d'information sur la connexion
-     * @returns {string}
-     */
+ * Génère un message d'information sur la connexion
+ * @returns {string}
+ */
     getConnectionInfo() {
         let info = `🔍 Détection réseau:\n`;
         info += `📡 Type de connexion: ${this.connectionType || 'Inconnu'}\n`;

@@ -45,7 +45,7 @@ class ImprovedDeviceScanner {
             const networkDetector = new NetworkDetector();
             const connectionInfo = await networkDetector.detectConnectionType();
 
-            console.log(connectionInfo.getConnectionInfo());
+            console.log(networkDetector.getConnectionInfo());
             this.emitProgress('network', 'info', `Type de connexion: ${connectionInfo.connectionType}`, {
                 connectionType: connectionInfo.connectionType,
                 activeInterface: connectionInfo.activeInterface

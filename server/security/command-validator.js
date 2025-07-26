@@ -49,7 +49,7 @@ class CommandValidator {
         'iwconfig': ['wlan0', 'eth0'],
         'arp-scan': ['--localnet', '--timeout', '1000', '--interface', 'wlan0', 'eth0'],
         'sudo': ['arp-scan', 'nmap', 'arping', 'iwlist', 'iw', '--localnet', '--timeout', '1000', '-sn', '--max-retries', '1', '--host-timeout', '1s', '192.168.1.0/24', 'scan', 'wlan0', 'eth0', '-I', '-c', '1', '-W', '1000'],
-        'ip': ['route', 'get', 'addr', 'show', '1.1.1.1', '192.168.1.1']
+        'ip': ['route', 'get', 'addr', 'show', 'link', '1.1.1.1', '192.168.1.1']
     };
 
     /**

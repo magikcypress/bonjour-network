@@ -13,7 +13,7 @@ class RealNoSudoWiFiScanner {
             const networkDetector = new NetworkDetector();
             const connectionInfo = await networkDetector.detectConnectionType();
 
-            console.log(connectionInfo.getConnectionInfo());
+            console.log(networkDetector.getConnectionInfo());
 
             // Si on est sur Ethernet, retourner un message informatif
             if (connectionInfo.connectionType === 'ethernet') {
