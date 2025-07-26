@@ -44,10 +44,9 @@ sudo apt install -y \
     iputils-ping \
     wireless-tools \
     wpasupplicant \
-    arp-scan \
     network-manager \
     iw \
-    iwconfig
+    arp-scan
 ```
 
 ## 🚀 **Installation**
@@ -139,17 +138,22 @@ sudo apt install -y \
     wpasupplicant \
     network-manager \
     iw \
-    iwconfig
+    arp-scan \
+    nmap
 
 # Vérifier l'installation
 which iwlist
 which nmcli
 which iw
+which arp-scan
+which nmap
 
 # Test des outils WiFi
 iwconfig
 iw dev
 nmcli device wifi list
+sudo iwlist scan
+sudo arp-scan --localnet
 ```
 
 ## 🐳 **Docker sur Raspberry Pi**
@@ -312,16 +316,18 @@ which nmcli
 which iw
 
 # Installer les outils manquants
-sudo apt install -y arp-scan nmap wireless-tools network-manager
+sudo apt install -y arp-scan nmap wireless-tools network-manager iw wpasupplicant
 
 # Vérifier les permissions
 sudo setcap cap_net_raw,cap_net_admin=eip $(which arp-scan)
 sudo setcap cap_net_raw,cap_net_admin=eip $(which nmap)
+sudo setcap cap_net_raw,cap_net_admin=eip $(which arping)
 
 # Test des outils
-arp-scan --localnet
-iwlist scan
+sudo arp-scan --localnet
+sudo iwlist scan
 nmcli device wifi list
+sudo iw dev
 ```
 
 #### **5. Problèmes de scan WiFi**

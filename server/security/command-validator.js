@@ -8,6 +8,9 @@ class CommandValidator {
         // Commandes réseau de base
         'arp', 'netstat', 'ifconfig', 'ping', 'nmap', 'dns-sd',
 
+        // Commandes réseau Linux
+        'ip',
+
         // Commandes WiFi macOS
         'airport', 'system_profiler', 'networksetup', 'wdutil',
 
@@ -45,7 +48,8 @@ class CommandValidator {
         'iw': ['dev', 'wlan0', 'scan'],
         'iwconfig': ['wlan0', 'eth0'],
         'arp-scan': ['--localnet', '--timeout', '1000', '--interface', 'wlan0', 'eth0'],
-        'sudo': ['arp-scan', 'nmap', 'arping', 'iwlist', 'iw', '--localnet', '--timeout', '1000', '-sn', '--max-retries', '1', '--host-timeout', '1s', '192.168.1.0/24', 'scan', 'wlan0', 'eth0', '-I', '-c', '1', '-W', '1000']
+        'sudo': ['arp-scan', 'nmap', 'arping', 'iwlist', 'iw', '--localnet', '--timeout', '1000', '-sn', '--max-retries', '1', '--host-timeout', '1s', '192.168.1.0/24', 'scan', 'wlan0', 'eth0', '-I', '-c', '1', '-W', '1000'],
+        'ip': ['route', 'get', 'addr', 'show', '1.1.1.1', '192.168.1.1']
     };
 
     /**

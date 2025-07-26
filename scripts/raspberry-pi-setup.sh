@@ -85,8 +85,7 @@ install_system_dependencies() {
         wireless-tools \
         wpasupplicant \
         network-manager \
-        iw \
-        iwconfig
+        iw
     
     print_success "Dépendances système installées"
 }
