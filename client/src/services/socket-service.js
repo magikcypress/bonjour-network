@@ -10,7 +10,7 @@ class SocketService {
         this.eventListeners = new Map();
 
         // Forcer l'utilisation de localhost pour éviter les problèmes CORS
-        this.baseURL = 'http://localhost:5001';
+        this.baseURL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001';
     }
 
     connect() {
