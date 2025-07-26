@@ -42,8 +42,8 @@ class RealNoSudoWiFiScanner {
 
     async scanWithIwlist() {
         try {
-            // Utiliser iwlist pour scanner les réseaux WiFi
-            const { stdout } = await execAsync('iwlist scan 2>/dev/null || iwlist wlan0 scan 2>/dev/null');
+            // Utiliser iwlist pour scanner les réseaux WiFi (avec sudo sur Raspberry Pi)
+            const { stdout } = await execAsync('iwlist scan 2>/dev/null || iwlist wlan0 scan 2>/dev/null || sudo iwlist scan 2>/dev/null || sudo iwlist wlan0 scan 2>/dev/null');
             return this.parseIwlistOutput(stdout);
         } catch (error) {
             console.log('iwlist non disponible ou échoué');
@@ -64,8 +64,8 @@ class RealNoSudoWiFiScanner {
 
     async scanWithIw() {
         try {
-            // Utiliser iw pour scanner les réseaux WiFi
-            const { stdout } = await execAsync('iw dev wlan0 scan 2>/dev/null || iw dev scan 2>/dev/null');
+            // Utiliser iw pour scanner les réseaux WiFi (avec sudo sur Raspberry Pi)
+            const { stdout } = await execAsync('iw dev wlan0 scan 2>/dev/null || iw dev scan 2>/dev/null || sudo iw dev wlan0 scan 2>/dev/null || sudo iw dev scan 2>/dev/null');
             return this.parseIwOutput(stdout);
         } catch (error) {
             console.log('iw non disponible ou échoué');

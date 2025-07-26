@@ -11,8 +11,14 @@ class CommandValidator {
         // Commandes WiFi macOS
         'airport', 'system_profiler', 'networksetup', 'wdutil',
 
+        // Commandes WiFi Linux/Raspberry Pi
+        'iwlist', 'nmcli', 'iw', 'iwconfig',
+
         // Commandes de découverte réseau
-        'arping', 'scutil',
+        'arping', 'scutil', 'arp-scan',
+
+        // Commandes système avec sudo
+        'sudo',
 
         // Commandes de test
         'which', 'echo', 'cat', 'grep'
@@ -22,17 +28,24 @@ class CommandValidator {
     static allowedParams = {
         'arp': ['-a', '-n'],
         'netstat': ['-rn', '-an'],
-        'ifconfig': ['en0', 'en1', 'lo0'],
+        'ifconfig': ['en0', 'en1', 'lo0', 'wlan0', 'eth0'],
         'ping': ['-c', '1', '-W', '1000', '500', '300'],
         'nmap': ['-sn', '--max-retries', '1', '--host-timeout', '1s', '192.168.1.0/24'],
         'dns-sd': ['-B', '_http._tcp', '_https._tcp', '_ssh._tcp', '_ftp._tcp', '_smb._tcp', '_airplay._tcp', 'local', '2>/dev/null'],
         'airport': ['-s'],
         'system_profiler': ['SPAirPortDataType'],
         'networksetup': ['-listallnetworkservices', '-getinfo', 'Wi-Fi', 'AirPort', 'Ethernet'],
-        'arping': ['-I', 'en0', '-c', '1', '-W', '1000'],
+        'arping': ['-I', 'en0', 'wlan0', 'eth0', '-c', '1', '-W', '1000'],
         'scutil': ['--nwi'],
-        'which': ['nmap', 'arping'],
-        'wdutil': ['info']
+        'which': ['nmap', 'arping', 'arp-scan', 'iwlist', 'nmcli', 'iw'],
+        'wdutil': ['info'],
+        // Commandes Linux/Raspberry Pi
+        'iwlist': ['scan', 'wlan0', 'eth0'],
+        'nmcli': ['device', 'wifi', 'list'],
+        'iw': ['dev', 'wlan0', 'scan'],
+        'iwconfig': ['wlan0', 'eth0'],
+        'arp-scan': ['--localnet', '--timeout', '1000', '--interface', 'wlan0', 'eth0'],
+        'sudo': ['arp-scan', 'nmap', 'arping', 'iwlist', 'iw', '--localnet', '--timeout', '1000', '-sn', '--max-retries', '1', '--host-timeout', '1s', '192.168.1.0/24', 'scan', 'wlan0', 'eth0', '-I', '-c', '1', '-W', '1000']
     };
 
     /**
@@ -131,8 +144,17 @@ class CommandValidator {
             throw new Error(`Commande non autorisée: ${command}`);
         }
 
+        // Détecter si on est sur Raspberry Pi/Linux
+        const isRaspberryPi = this.detectRaspberryPi();
+
+        // Ajouter sudo automatiquement pour certaines commandes sur Raspberry Pi
+        let finalCommand = command;
+        if (isRaspberryPi && this.needsSudo(command)) {
+            finalCommand = `sudo ${command}`;
+        }
+
         try {
-            const result = await execAsync(command, {
+            const result = await execAsync(finalCommand, {
                 timeout: 10000, // Timeout de 10 secondes
                 maxBuffer: 1024 * 1024 // Buffer max de 1MB
             });
@@ -150,6 +172,42 @@ class CommandValidator {
                 stderr: error.stderr || ''
             };
         }
+    }
+
+    /**
+     * Détecte si on est sur Raspberry Pi
+     * @returns {boolean} - True si on est sur Raspberry Pi
+     */
+    static detectRaspberryPi() {
+        try {
+            // Vérifier si on est sur Raspberry Pi
+            const fs = require('fs');
+            if (fs.existsSync('/proc/cpuinfo')) {
+                const cpuinfo = fs.readFileSync('/proc/cpuinfo', 'utf8');
+                return cpuinfo.includes('Raspberry Pi');
+            }
+            return false;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    /**
+     * Détermine si une commande nécessite sudo sur Raspberry Pi
+     * @param {string} command - La commande à vérifier
+     * @returns {boolean} - True si sudo est nécessaire
+     */
+    static needsSudo(command) {
+        const sudoCommands = [
+            'arp-scan',
+            'nmap',
+            'arping',
+            'iwlist',
+            'iw'
+        ];
+
+        const baseCommand = command.trim().split(/\s+/)[0];
+        return sudoCommands.includes(baseCommand);
     }
 
     /**
