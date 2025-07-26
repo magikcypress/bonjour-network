@@ -126,16 +126,18 @@ const limiter = rateLimit({
     }
 });
 
-// Middleware de sécurité
+// Middleware de sécurité (ordre important pour CORS)
 app.use(customCorsMiddleware);
 app.use(securityHeaders);
-app.use(validateHttpMethod);
 app.use(requestSizeLimit);
 app.use(validateContentType);
 app.use(express.json({ limit: '1mb' }));
 
 // Appliquer le rate limiting
 app.use(limiter);
+
+// Validation des méthodes HTTP (après CORS pour permettre OPTIONS)
+app.use(validateHttpMethod);
 
 // Initialiser WiFi
 wifi.init({
