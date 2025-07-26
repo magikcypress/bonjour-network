@@ -1,4 +1,4 @@
-# 🔍 Améliorations du Scanner d'Appareils WiFi Tracker
+# 🔍 Améliorations du Scanner d'Appareils Bonjour Network
 
 ## 🎯 **Problèmes identifiés dans le scanner original**
 

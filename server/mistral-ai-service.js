@@ -15,7 +15,7 @@ class MistralAIService {
             const deviceData = {
                 mac: mac,
                 timestamp: new Date().toISOString(),
-                source: 'wifi-tracker',
+                source: 'bonjour-network',
                 request_type: 'device_identification'
             };
 
@@ -50,7 +50,7 @@ class MistralAIService {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${this.apiKey}`,
-                'X-Source': 'wifi-tracker',
+                'X-Source': 'bonjour-network',
                 'X-No-Training': 'true', // Restriction pour éviter l'entraînement
                 'X-Data-Usage': 'inference-only' // Usage uniquement pour l'inférence
             },
@@ -70,7 +70,7 @@ class MistralAIService {
                 max_tokens: 200,
                 stream: false,
                 // Paramètres pour éviter l'entraînement
-                user: "wifi-tracker-device-identification",
+                user: "bonjour-network-device-identification",
                 usage_metadata: {
                     purpose: "device_identification",
                     no_training: true,

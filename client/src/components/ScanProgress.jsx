@@ -9,7 +9,8 @@ import {
     Server,
     Globe,
     Smartphone,
-    Loader
+    Loader,
+    Search
 } from 'lucide-react';
 
 const ScanProgress = ({ isVisible, onComplete }) => {
@@ -69,11 +70,22 @@ const ScanProgress = ({ isVisible, onComplete }) => {
             'netstat-scan': <Server className="w-4 h-4" />,
             'ifconfig-scan': <Wifi className="w-4 h-4" />,
             'ping-sweep': <Globe className="w-4 h-4" />,
+            'quick-ping': <Search className="w-4 h-4" />,
             'nmap-scan': <Server className="w-4 h-4" />,
             'bonjour-scan': <Smartphone className="w-4 h-4" />,
             'arping-scan': <Activity className="w-4 h-4" />,
             'mistral-ai': <Smartphone className="w-4 h-4" />,
-            'scan': <Wifi className="w-4 h-4" />
+            'scan': <Wifi className="w-4 h-4" />,
+            // Ajout des étapes directes du backend
+            'arp': <Activity className="w-4 h-4" />,
+            'netstat': <Server className="w-4 h-4" />,
+            'dns': <Globe className="w-4 h-4" />,
+            'quick-ping': <Search className="w-4 h-4" />,
+            'ping': <Globe className="w-4 h-4" />,
+            'nmap': <Server className="w-4 h-4" />,
+            'arping': <Activity className="w-4 h-4" />,
+            'bonjour': <Smartphone className="w-4 h-4" />,
+            'mistral': <Smartphone className="w-4 h-4" />
         };
         return icons[step] || <Activity className="w-4 h-4" />;
     };
@@ -84,11 +96,22 @@ const ScanProgress = ({ isVisible, onComplete }) => {
             'netstat-scan': 'Scan Netstat',
             'ifconfig-scan': 'Scan Ifconfig',
             'ping-sweep': 'Ping Sweep',
+            'quick-ping': 'Mini-ping sweep',
             'nmap-scan': 'Scan Nmap',
             'bonjour-scan': 'Scan Bonjour',
             'arping-scan': 'Scan Arping',
             'mistral-ai': 'Identification Mistral AI',
-            'scan': 'Scan Général'
+            'scan': 'Scan Général',
+            // Ajout des étapes directes du backend
+            'arp': 'Scan ARP',
+            'netstat': 'Scan netstat',
+            'dns': 'Résolution DNS',
+            'quick-ping': 'Mini-ping sweep',
+            'ping': 'Ping sweep',
+            'nmap': 'Scan nmap',
+            'arping': 'Scan arping',
+            'bonjour': 'Scan Bonjour',
+            'mistral': 'Identification Mistral AI'
         };
         return names[step] || step;
     };

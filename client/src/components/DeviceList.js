@@ -7,16 +7,18 @@ const SCAN_STEPS = {
     fast: [
         { id: 'arp', name: 'Scan ARP', description: 'Détection des appareils via table ARP', icon: Wifi },
         { id: 'netstat', name: 'Scan netstat', description: 'Connexions réseau actives', icon: Wifi },
-        { id: 'dns', name: 'Résolution DNS', description: 'Résolution DNS inversée', icon: Wifi }
+        { id: 'dns', name: 'Résolution DNS', description: 'Résolution DNS inversée', icon: Wifi },
+        { id: 'quick-ping', name: 'Mini-ping sweep', description: 'Découverte ciblée sur IPs typiques', icon: Search }
     ],
     complete: [
         { id: 'arp', name: 'Scan ARP', description: 'Détection des appareils via table ARP', icon: Wifi },
         { id: 'netstat', name: 'Scan netstat', description: 'Connexions réseau actives', icon: Wifi },
         { id: 'dns', name: 'Résolution DNS', description: 'Résolution DNS inversée', icon: Wifi },
+        { id: 'quick-ping', name: 'Mini-ping sweep', description: 'Découverte ciblée sur IPs typiques', icon: Search },
         { id: 'ping', name: 'Ping sweep', description: 'Découverte active sur 254 adresses', icon: Search },
         { id: 'nmap', name: 'Scan nmap', description: 'Découverte avec nmap (si disponible)', icon: Search },
-        { id: 'bonjour', name: 'Scan Bonjour', description: 'Services réseau (HTTP, SSH, etc.)', icon: Monitor },
         { id: 'arping', name: 'Scan arping', description: 'Découverte ARP active (si disponible)', icon: Search },
+        { id: 'bonjour', name: 'Scan Bonjour', description: 'Services réseau (HTTP, SSH, etc.)', icon: Monitor },
         { id: 'mistral', name: 'Identification Mistral AI', description: 'Identification des fabricants', icon: Smartphone }
     ]
 };
@@ -92,51 +94,34 @@ function DeviceList({
         return () => clearInterval(interval);
     }, [scanProgress?.isActive, scanMode, scanStartTime]);
 
-    // Simulation des étapes du scan
+    // Écoute des vraies étapes WebSocket au lieu de simulation
     useEffect(() => {
-        let timeoutId;
-        let isActive = true;
+        if (scanProgress?.isActive && scanProgress.step) {
+            // Filtrer les étapes non pertinentes pour l'affichage
+            const relevantSteps = ['arp', 'netstat', 'dns', 'quick-ping', 'ping', 'nmap', 'arping', 'bonjour', 'mistral'];
 
-        if (scanProgress?.isActive) {
-            const steps = SCAN_STEPS[scanMode];
-            let stepIndex = 0;
-
-            const simulateNextStep = () => {
-                if (!isActive || stepIndex >= steps.length) {
-                    return;
+            if (relevantSteps.includes(scanProgress.step)) {
+                // Mettre à jour l'étape courante basée sur les données WebSocket
+                const currentStepData = SCAN_STEPS[scanMode].find(step => step.id === scanProgress.step);
+                if (currentStepData) {
+                    setCurrentStep(currentStepData);
                 }
 
-                const currentStep = steps[stepIndex];
-                if (isActive) {
-                    setCurrentStep(currentStep);
+                // Marquer les étapes comme complétées basées sur le statut
+                if (scanProgress.step && scanProgress.message &&
+                    (scanProgress.message.includes('terminé') ||
+                        scanProgress.message.includes('succès') ||
+                        scanProgress.message.includes('appareils') ||
+                        scanProgress.message.includes('hostnames résolus') ||
+                        scanProgress.message.includes('services'))) {
+                    setCompletedSteps(prev => new Set([...prev, scanProgress.step]));
                 }
-
-                const stepTime = scanMode === 'fast'
-                    ? 1000 + Math.random() * 2000
-                    : 8000 + Math.random() * 12000;
-
-                timeoutId = setTimeout(() => {
-                    if (isActive) {
-                        setCompletedSteps(prev => new Set([...prev, currentStep.id]));
-                        stepIndex++;
-                        simulateNextStep();
-                    }
-                }, stepTime);
-            };
-
-            simulateNextStep();
-        } else {
+            }
+        } else if (!scanProgress?.isActive) {
             setCurrentStep(null);
             setCompletedSteps(new Set());
         }
-
-        return () => {
-            isActive = false;
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
-        };
-    }, [scanProgress?.isActive, scanMode]);
+    }, [scanProgress?.isActive, scanProgress?.step, scanProgress?.message, scanMode]);
 
     // Gestionnaire de démarrage de scan
     const handleStartScan = async (mode = scanMode) => {

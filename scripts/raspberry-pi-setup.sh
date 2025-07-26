@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Script d'installation WiFi Tracker pour Raspberry Pi
+# Script d'installation Bonjour Network pour Raspberry Pi
 
 set -e
 
-echo "🍓 Installation WiFi Tracker sur Raspberry Pi"
+echo "🍓 Installation Bonjour Network sur Raspberry Pi"
 echo "============================================="
 
 # Couleurs pour l'affichage
@@ -138,19 +138,19 @@ optimize_system() {
     print_success "Système optimisé"
 }
 
-# Installation de WiFi Tracker
+# Installation de Bonjour Network
 install_wifi_tracker() {
-    print_status "Installation de WiFi Tracker..."
+    print_status "Installation de Bonjour Network..."
     
     # Vérifier si le projet existe déjà
-    if [ -d "wifi-tracker" ]; then
+    if [ -d "bonjour-network" ]; then
         print_status "Projet existant détecté, mise à jour..."
-        cd wifi-tracker
+        cd bonjour-network
         git pull
     else
         # Cloner le projet
-        git clone https://github.com/magikcypress/wifi-tracker.git
-        cd wifi-tracker
+        git clone https://github.com/magikcypress/bonjour-network.git
+        cd bonjour-network
     fi
     
     # Installation des dépendances
@@ -160,7 +160,7 @@ install_wifi_tracker() {
     mkdir -p logs
     mkdir -p data
     
-    print_success "WiFi Tracker installé"
+    print_success "Bonjour Network installé"
 }
 
 # Configuration de l'environnement
@@ -191,20 +191,20 @@ setup_systemd_service() {
     print_status "Configuration du service systemd..."
     
     # Créer l'utilisateur si nécessaire
-    if ! id "wifi-tracker" &>/dev/null; then
-        sudo adduser --disabled-password --gecos "" wifi-tracker
-        print_success "Utilisateur wifi-tracker créé"
+    if ! id "bonjour-network" &>/dev/null; then
+        sudo adduser --disabled-password --gecos "" bonjour-network
+        print_success "Utilisateur bonjour-network créé"
     fi
     
     # Créer le service systemd
-    sudo tee /etc/systemd/system/wifi-tracker.service > /dev/null << EOF
+    sudo tee /etc/systemd/system/bonjour-network.service > /dev/null << EOF
 [Unit]
 Description=WiFi Tracker
 After=network.target
 
 [Service]
 Type=simple
-User=wifi-tracker
+User=bonjour-network
 WorkingDirectory=$(pwd)
 ExecStart=/usr/bin/node server/index.js
 Restart=always
@@ -218,8 +218,8 @@ EOF
     
     # Activer le service
     sudo systemctl daemon-reload
-    sudo systemctl enable wifi-tracker
-    sudo systemctl start wifi-tracker
+    sudo systemctl enable bonjour-network
+    sudo systemctl start bonjour-network
     
     print_success "Service systemd configuré"
 }
@@ -256,7 +256,7 @@ test_installation() {
     fi
     
     # Vérifier le service
-    if sudo systemctl is-active --quiet wifi-tracker; then
+    if sudo systemctl is-active --quiet bonjour-network; then
         print_success "Service actif"
     else
         print_error "Service inactif"
@@ -266,17 +266,17 @@ test_installation() {
 # Affichage des informations finales
 show_final_info() {
     echo ""
-    echo "🎉 WiFi Tracker installé avec succès sur Raspberry Pi !"
+    echo "🎉 Bonjour Network installé avec succès sur Raspberry Pi !"
     echo "======================================================"
     echo ""
     echo "📱 Accès à l'application:"
     echo "   http://$(hostname -I | awk '{print $1}'):5001"
     echo ""
     echo "🔧 Commandes utiles:"
-    echo "   - Voir les logs: sudo journalctl -u wifi-tracker -f"
-    echo "   - Redémarrer: sudo systemctl restart wifi-tracker"
-    echo "   - Statut: sudo systemctl status wifi-tracker"
-    echo "   - Arrêter: sudo systemctl stop wifi-tracker"
+    echo "   - Voir les logs: sudo journalctl -u bonjour-network -f"
+    echo "   - Redémarrer: sudo systemctl restart bonjour-network"
+    echo "   - Statut: sudo systemctl status bonjour-network"
+    echo "   - Arrêter: sudo systemctl stop bonjour-network"
     echo ""
     echo "📊 Monitoring:"
     echo "   - Ressources: htop"
@@ -357,15 +357,15 @@ main() {
             test_installation
             ;;
         6)
-            sudo systemctl start wifi-tracker
+            sudo systemctl start bonjour-network
             print_success "Service démarré"
             ;;
         7)
-            sudo systemctl stop wifi-tracker
+            sudo systemctl stop bonjour-network
             print_success "Service arrêté"
             ;;
         8)
-            sudo journalctl -u wifi-tracker -f
+            sudo journalctl -u bonjour-network -f
             ;;
         q|Q)
             echo "Au revoir !"

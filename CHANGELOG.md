@@ -1,4 +1,4 @@
-# 📝 CHANGELOG - WiFi Tracker
+# 📝 CHANGELOG - Bonjour Network
 
 ## [2.1.0] - 2025-01-19
 

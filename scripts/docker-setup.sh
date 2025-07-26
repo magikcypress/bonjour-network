@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Script de configuration Docker pour WiFi Tracker
+# Script de configuration Docker pour Bonjour Network
 
 set -e
 
-echo "🐳 Configuration Docker pour WiFi Tracker"
+echo "🐳 Configuration Docker pour Bonjour Network"
 echo "========================================"
 
 # Couleurs pour l'affichage
@@ -70,7 +70,7 @@ create_directories() {
 # Builder l'image Docker
 build_image() {
     print_status "Construction de l'image Docker..."
-    docker build -t wifi-tracker .
+    docker build -t bonjour-network .
     print_success "Image construite avec succès"
 }
 
@@ -86,7 +86,7 @@ check_status() {
     print_status "Vérification du statut..."
     sleep 5
     if docker-compose ps | grep -q "Up"; then
-        print_success "WiFi Tracker est démarré et accessible sur http://localhost:5001"
+        print_success "Bonjour Network est démarré et accessible sur http://localhost:5001"
     else
         print_error "Erreur lors du démarrage. Vérifiez les logs avec: docker-compose logs"
         exit 1
@@ -96,7 +96,7 @@ check_status() {
 # Afficher les informations utiles
 show_info() {
     echo ""
-    echo "🎉 WiFi Tracker est prêt !"
+    echo "🎉 Bonjour Network est prêt !"
     echo "=========================="
     echo ""
     echo "📱 Accès à l'application:"

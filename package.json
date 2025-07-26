@@ -1,29 +1,51 @@
 {
-    "name": "wifi-tracker",
+    "name": "bonjour-network",
     "version": "1.0.0",
-    "description": "Application pour scanner et gérer les réseaux WiFi dans un appartement",
+    "description": "Application moderne de surveillance et gestion de réseau WiFi",
     "main": "server/index.js",
     "scripts": {
+        "start": "node server/index.js",
         "dev": "concurrently \"npm run server\" \"npm run client\"",
-        "server": "cd server && npm run dev",
+        "server": "cd server && npm start",
         "client": "cd client && npm start",
         "build": "cd client && npm run build",
-        "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+        "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+        "test": "jest",
+        "test:integration": "jest --testPathPattern=tests/",
+        "test:security": "node server/security/security-test.js",
+        "test:performance": "node tests/test-performance.js",
+        "lint": "eslint .",
+        "format": "prettier --write .",
+        "pre-commit": "npm run lint && npm test"
     },
     "keywords": [
         "wifi",
-        "scanner",
         "network",
-        "tracker"
+        "scanner",
+        "monitoring",
+        "react",
+        "nodejs",
+        "socket.io",
+        "mistral-ai"
     ],
     "author": "magikcypress",
     "license": "MIT",
     "devDependencies": {
         "concurrently": "^8.2.2",
-        "puppeteer": "^24.14.0"
+        "jest": "^29.7.0",
+        "eslint": "^8.57.0",
+        "prettier": "^3.2.5"
     },
-    "dependencies": {
-        "axios": "^1.10.0",
-        "socket.io-client": "^4.8.1"
-    }
+    "engines": {
+        "node": ">=18.0.0",
+        "npm": ">=8.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/magikcypress/bonjour-network.git"
+    },
+    "bugs": {
+        "url": "https://github.com/magikcypress/bonjour-network/issues"
+    },
+    "homepage": "https://github.com/magikcypress/bonjour-network#readme"
 }

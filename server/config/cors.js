@@ -1,5 +1,5 @@
 /**
- * Configuration CORS sécurisée pour WiFi Tracker
+ * Configuration CORS sécurisée pour Bonjour Network
  */
 
 const corsConfig = {

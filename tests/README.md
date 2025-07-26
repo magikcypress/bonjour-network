@@ -1,6 +1,6 @@
-# Tests Puppeteer
+# 🧪 Tests - Bonjour Network
 
-Ce répertoire contient tous les tests automatisés utilisant Puppeteer pour tester l'interface utilisateur et les fonctionnalités de l'application WiFi Tracker.
+Ce répertoire contient tous les tests automatisés pour valider les fonctionnalités et les fonctionnalités de l'application Bonjour Network.
 
 ## Tests de validation des réseaux
 

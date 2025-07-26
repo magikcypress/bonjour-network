@@ -2,7 +2,7 @@
 
 ## ✅ **Intégration Réussie**
 
-Le scanner amélioré a été **intégré avec succès** dans l'application WiFi Tracker. Voici les résultats des tests :
+Le scanner amélioré a été **intégré avec succès** dans l'application Bonjour Network. Voici les résultats des tests :
 
 ### **📊 Comparaison des Performances**
 

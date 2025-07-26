@@ -46,36 +46,33 @@ function Navigation({
             {/* En-tête avec titre et statut de connectivité */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                        <Wifi className="w-8 h-8 text-blue-600" />
-                        <h1 className="text-3xl font-bold text-gray-800">WiFi Tracker</h1>
-                    </div>
-
-                    {/* Indicateur de connectivité */}
-                    <div className="flex items-center space-x-2">
-                        <div className={`flex items-center space-x-1 ${connectivityStatus.color}`}>
-                            {connectivityStatus.status === 'connected' && connectivity.socket ? (
-                                <Signal className="w-4 h-4" />
-                            ) : connectivity.api ? (
-                                <Wifi className="w-4 h-4" />
-                            ) : (
-                                <WifiOff className="w-4 h-4" />
-                            )}
-                            <span className="text-sm font-medium">{connectivityStatus.text}</span>
-                        </div>
-                    </div>
+                    <h1 className="text-3xl font-bold text-gray-800">Bonjour Network</h1>
                 </div>
 
-                {/* Statistiques globales */}
-                <div className="flex items-center space-x-6 text-sm">
-                    <div className="flex items-center space-x-2">
-                        <Wifi className="w-4 h-4 text-blue-600" />
-                        <span className="text-gray-600">{networkCount} réseaux</span>
+                {/* Indicateur de connectivité */}
+                <div className="flex items-center space-x-2">
+                    <div className={`flex items-center space-x-1 ${connectivityStatus.color}`}>
+                        {connectivityStatus.status === 'connected' && connectivity.socket ? (
+                            <Signal className="w-4 h-4" />
+                        ) : connectivity.api ? (
+                            <Wifi className="w-4 h-4" />
+                        ) : (
+                            <WifiOff className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-medium">{connectivityStatus.text}</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <Smartphone className="w-4 h-4 text-green-600" />
-                        <span className="text-gray-600">{deviceCount} appareils</span>
-                    </div>
+                </div>
+            </div>
+
+            {/* Statistiques globales */}
+            <div className="flex items-center space-x-6 text-sm">
+                <div className="flex items-center space-x-2">
+                    <Wifi className="w-4 h-4 text-blue-600" />
+                    <span className="text-gray-600">{networkCount} réseaux</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Smartphone className="w-4 h-4 text-green-600" />
+                    <span className="text-gray-600">{deviceCount} appareils</span>
                 </div>
             </div>
 

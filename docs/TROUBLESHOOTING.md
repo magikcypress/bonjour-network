@@ -1,4 +1,4 @@
-# 🔧 Guide de Dépannage - WiFi Tracker
+# 🔧 Guide de Dépannage - Bonjour Network
 
 ## 🚨 **Erreurs Courantes et Solutions**
 
@@ -272,7 +272,7 @@ export FAST_SCAN_TIMEOUT=30000
 
 ```bash
 # Activer les logs détaillés
-export DEBUG=wifi-tracker:*
+export DEBUG=bonjour-network:*
 export LOG_LEVEL=debug
 ```
 

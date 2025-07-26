@@ -1,4 +1,4 @@
-# 🔧 API Endpoints - Version Améliorée
+# 🔌 API Endpoints - Bonjour Network
 
 ## 📊 **Endpoints Principaux (Scanner Amélioré)**
 
@@ -297,12 +297,12 @@ MANUFACTURERS_INITIAL_FILE=data/manufacturers-initial.json
 
 ```bash
 # Activer les logs détaillés
-DEBUG=wifi-tracker:scanner
+DEBUG=bonjour-network:scanner
 
 # Logs spécifiques
-DEBUG=wifi-tracker:fusion
-DEBUG=wifi-tracker:quality
-DEBUG=wifi-tracker:mistral
+DEBUG=bonjour-network:fusion
+DEBUG=bonjour-network:quality
+DEBUG=bonjour-network:mistral
 ```
 
 ## 🎯 **Recommandations d'Utilisation**

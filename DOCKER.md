@@ -1,6 +1,6 @@
-# 🐳 Docker - WiFi Tracker
+# 🐳 Docker - Bonjour Network
 
-Guide complet pour déployer WiFi Tracker avec Docker.
+Guide complet pour déployer Bonjour Network avec Docker.
 
 ## 🚀 Installation Rapide
 
@@ -8,8 +8,8 @@ Guide complet pour déployer WiFi Tracker avec Docker.
 
 ```bash
 # Cloner le projet
-git clone https://github.com/magikcypress/wifi-tracker.git
-cd wifi-tracker
+git clone https://github.com/magikcypress/bonjour-network.git
+cd bonjour-network
 
 # Installation automatique
 ./scripts/docker-setup.sh --auto
@@ -19,8 +19,8 @@ cd wifi-tracker
 
 ```bash
 # Cloner le projet
-git clone https://github.com/magikcypress/wifi-tracker.git
-cd wifi-tracker
+git clone https://github.com/magikcypress/bonjour-network.git
+cd bonjour-network
 
 # Démarrer
 docker-compose up -d
@@ -33,21 +33,21 @@ docker-compose up -d
 
 ```bash
 # Cloner le projet
-git clone https://github.com/magikcypress/wifi-tracker.git
-cd wifi-tracker
+git clone https://github.com/magikcypress/bonjour-network.git
+cd bonjour-network
 
 # Builder l'image
-docker build -t wifi-tracker .
+docker build -t bonjour-network .
 
 # Démarrer le conteneur
 docker run -d \
-  --name wifi-tracker \
+  --name bonjour-network \
   --network host \
   --privileged \
   -p 5001:5001 \
   -v $(pwd)/logs:/app/logs \
   -v $(pwd)/data:/app/data \
-  wifi-tracker
+  bonjour-network
 ```
 
 ## 🔧 Configuration
@@ -83,7 +83,7 @@ JWT_SECRET=your-jwt-secret-here
 
 ```bash
 docker run -d \
-  --name wifi-tracker \
+  --name bonjour-network \
   --network host \
   --privileged \
   -p 5001:5001 \
@@ -92,7 +92,7 @@ docker run -d \
   -e SCAN_TIMEOUT=5000 \
   -v $(pwd)/logs:/app/logs \
   -v $(pwd)/data:/app/data \
-  wifi-tracker
+  bonjour-network
 ```
 
 ## 📁 Volumes et Persistance
@@ -118,7 +118,7 @@ mkdir -p data
 
 ### **Configuration sécurisée**
 
-- **Utilisateur non-root** : Le conteneur fonctionne avec l'utilisateur `wifi-tracker` (UID 1001)
+- **Utilisateur non-root** : Le conteneur fonctionne avec l'utilisateur `bonjour-network` (UID 1001)
 - **Mode privilégié** : Nécessaire pour accéder aux interfaces réseau
 - **Network host** : Accès direct au réseau pour le scan WiFi
 - **Volumes persistants** : Logs et données sauvegardés
@@ -127,13 +127,13 @@ mkdir -p data
 
 ```bash
 # Vérifier les permissions
-docker exec wifi-tracker id
+docker exec bonjour-network id
 
 # Voir les logs de sécurité
-docker logs wifi-tracker | grep -i security
+docker logs bonjour-network | grep -i security
 
 # Vérifier les processus
-docker exec wifi-tracker ps aux
+docker exec bonjour-network ps aux
 ```
 
 ## 🛠️ Commandes Utiles
@@ -167,7 +167,7 @@ docker-compose --profile dev up -d
 docker-compose build --no-cache
 
 # Accéder au conteneur
-docker exec -it wifi-tracker sh
+docker exec -it bonjour-network sh
 ```
 
 ### **Nettoyage**
@@ -194,27 +194,27 @@ docker system prune -a --volumes
 lsof -i :5001
 
 # Changer le port
-docker run -p 5002:5001 wifi-tracker
+docker run -p 5002:5001 bonjour-network
 ```
 
 #### **2. Permissions réseau**
 
 ```bash
 # Vérifier les permissions
-docker exec wifi-tracker ifconfig
+docker exec bonjour-network ifconfig
 
 # Redémarrer avec privilèges
-docker run --privileged --network host wifi-tracker
+docker run --privileged --network host bonjour-network
 ```
 
 #### **3. Logs d'erreur**
 
 ```bash
 # Voir les logs détaillés
-docker logs wifi-tracker
+docker logs bonjour-network
 
 # Suivre les logs en temps réel
-docker logs -f wifi-tracker
+docker logs -f bonjour-network
 ```
 
 ### **Vérification de l'installation**
@@ -224,7 +224,7 @@ docker logs -f wifi-tracker
 curl http://localhost:5001/api/networks
 
 # Vérifier la santé
-docker exec wifi-tracker wget -qO- http://localhost:5001/api/networks
+docker exec bonjour-network wget -qO- http://localhost:5001/api/networks
 ```
 
 ## 📊 Monitoring
@@ -233,23 +233,23 @@ docker exec wifi-tracker wget -qO- http://localhost:5001/api/networks
 
 ```bash
 # Ressources utilisées
-docker stats wifi-tracker
+docker stats bonjour-network
 
 # Informations détaillées
-docker inspect wifi-tracker
+docker inspect bonjour-network
 ```
 
 ### **Logs structurés**
 
 ```bash
 # Logs d'application
-docker logs wifi-tracker | grep "WiFi Tracker"
+docker logs bonjour-network | grep "Bonjour Network"
 
 # Logs de sécurité
-docker logs wifi-tracker | grep -i security
+docker logs bonjour-network | grep -i security
 
 # Logs d'erreur
-docker logs wifi-tracker | grep -i error
+docker logs bonjour-network | grep -i error
 ```
 
 ## 🚀 Production
@@ -260,9 +260,9 @@ docker logs wifi-tracker | grep -i error
 # docker-compose.prod.yml
 version: '3.8'
 services:
-  wifi-tracker:
+  bonjour-network:
     build: .
-    container_name: wifi-tracker-prod
+    container_name: bonjour-network-prod
     restart: unless-stopped
     network_mode: host
     privileged: true
@@ -287,7 +287,7 @@ services:
 docker swarm init
 
 # Déployer le service
-docker stack deploy -c docker-compose.yml wifi-tracker
+docker stack deploy -c docker-compose.yml bonjour-network
 
 # Voir les services
 docker service ls

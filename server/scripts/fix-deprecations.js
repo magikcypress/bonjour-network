@@ -117,7 +117,7 @@ function createCleanStartScript() {
     const scriptContent = `#!/bin/bash
 
 # Script de démarrage propre sans avertissements
-echo "🚀 Démarrage du serveur WiFi Tracker..."
+echo "🚀 Démarrage du serveur Bonjour Network..."
 
 # Vérifier la version de Node.js
 NODE_VERSION=$(node --version)

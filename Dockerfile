@@ -1,4 +1,4 @@
-# Dockerfile pour WiFi Tracker
+# Dockerfile pour Bonjour Network
 # Multi-stage build pour optimiser la taille de l'image
 
 # Stage 1: Build du frontend
@@ -44,19 +44,19 @@ RUN apk add --no-cache \
 
 # Créer l'utilisateur non-root pour la sécurité
 RUN addgroup -g 1001 -S nodejs
-RUN adduser -S wifi-tracker -u 1001
+RUN adduser -S bonjour-network -u 1001
 
 # Définir le répertoire de travail
 WORKDIR /app
 
 # Copier les fichiers du backend
-COPY --from=backend-builder --chown=wifi-tracker:nodejs /app/server ./server
+COPY --from=backend-builder --chown=bonjour-network:nodejs /app/server ./server
 
 # Copier les fichiers du frontend buildés
-COPY --from=frontend-builder --chown=wifi-tracker:nodejs /app/client/build ./client/build
+COPY --from=frontend-builder --chown=bonjour-network:nodejs /app/client/build ./client/build
 
 # Créer les dossiers nécessaires
-RUN mkdir -p /app/logs && chown -R wifi-tracker:nodejs /app/logs
+RUN mkdir -p /app/logs && chown -R bonjour-network:nodejs /app/logs
 
 # Exposer le port
 EXPOSE 5001
@@ -67,7 +67,7 @@ ENV PORT=5001
 ENV CORS_ORIGIN=http://localhost:3001
 
 # Changer vers l'utilisateur non-root
-USER wifi-tracker
+USER bonjour-network
 
 # Script de démarrage
 COPY docker-entrypoint.sh /usr/local/bin/

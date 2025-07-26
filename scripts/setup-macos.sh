@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🔧 Configuration WiFi Tracker pour macOS"
+echo "🔧 Configuration Bonjour Network pour macOS"
 echo "========================================"
 
 # Vérifier si nous sommes sur macOS

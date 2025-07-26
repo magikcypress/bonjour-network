@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Script de test de sécurité pour WiFi Tracker
- * Usage: node security/security-test.js
+ * Script de test de sécurité pour Bonjour Network
+ * Valide les mesures de sécurité implémentées
  */
+
+console.log('🔒 Démarrage des tests de sécurité Bonjour Network...\n');
 
 const CommandValidator = require('./command-validator');
 const EnvironmentValidator = require('../config/environment');
@@ -23,7 +25,7 @@ class SecurityTester {
      * Exécute tous les tests de sécurité
      */
     async runAllTests() {
-        console.log('🔒 Démarrage des tests de sécurité WiFi Tracker...\n');
+        console.log('🔒 Démarrage des tests de sécurité Bonjour Network...\n');
 
         // Tests de validation des commandes
         this.testCommandValidation();

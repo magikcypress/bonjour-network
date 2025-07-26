@@ -1,10 +1,10 @@
-# 🍓 Raspberry Pi - WiFi Tracker
+# 🍓 Raspberry Pi - Bonjour Network
 
-Guide d'installation et de configuration de WiFi Tracker sur Raspberry Pi.
+Guide d'installation et de configuration de Bonjour Network sur Raspberry Pi.
 
-## 🎯 **Compatible ? OUI !** ✅
+## 🎯 **Vue d'Ensemble**
 
-WiFi Tracker est **parfaitement compatible** avec Raspberry Pi, avec quelques ajustements spécifiques.
+Bonjour Network est **parfaitement compatible** avec Raspberry Pi, avec quelques ajustements spécifiques.
 
 ## 📋 **Prérequis Raspberry Pi**
 
@@ -52,8 +52,8 @@ sudo apt install -y \
 
 ```bash
 # Cloner le projet
-git clone https://github.com/magikcypress/wifi-tracker.git
-cd wifi-tracker
+git clone https://github.com/magikcypress/bonjour-network.git
+cd bonjour-network
 
 # Installation des dépendances
 npm run install-all
@@ -70,8 +70,8 @@ npm run dev
 
 ```bash
 # Cloner le projet
-git clone https://github.com/magikcypress/wifi-tracker.git
-cd wifi-tracker
+git clone https://github.com/magikcypress/bonjour-network.git
+cd bonjour-network
 
 # Démarrer avec Docker
 docker-compose up -d
@@ -153,11 +153,11 @@ ENV NODE_OPTIONS="--max-old-space-size=512"
 version: '3.8'
 
 services:
-  wifi-tracker:
+  bonjour-network:
     build:
       context: .
       dockerfile: Dockerfile.raspberry-pi
-    container_name: wifi-tracker-pi
+    container_name: bonjour-network-pi
     ports:
       - "5001:5001"
     environment:
@@ -193,27 +193,27 @@ sudo ufw enable
 
 ```bash
 # Créer un utilisateur pour l'application
-sudo adduser wifi-tracker
-sudo usermod -aG docker wifi-tracker
+sudo adduser bonjour-network
+sudo usermod -aG docker bonjour-network
 
 # Changer les permissions
-sudo chown -R wifi-tracker:wifi-tracker /home/wifi-tracker/wifi-tracker
+sudo chown -R bonjour-network:bonjour-network /home/bonjour-network/bonjour-network
 ```
 
 ### **3. Service systemd**
 
 ```bash
 # Créer le service
-sudo nano /etc/systemd/system/wifi-tracker.service
+sudo nano /etc/systemd/system/bonjour-network.service
 
 [Unit]
-Description=WiFi Tracker
+Description=Bonjour Network
 After=network.target
 
 [Service]
 Type=simple
-User=wifi-tracker
-WorkingDirectory=/home/wifi-tracker/wifi-tracker
+User=bonjour-network
+WorkingDirectory=/home/bonjour-network/bonjour-network
 ExecStart=/usr/bin/node server/index.js
 Restart=always
 RestartSec=10
@@ -223,8 +223,8 @@ Environment=NODE_ENV=production
 WantedBy=multi-user.target
 
 # Activer le service
-sudo systemctl enable wifi-tracker
-sudo systemctl start wifi-tracker
+sudo systemctl enable bonjour-network
+sudo systemctl start bonjour-network
 ```
 
 ## 📊 **Monitoring et Performance**
@@ -319,9 +319,9 @@ NODE_OPTIONS=--max-old-space-size=512
 
 ```bash
 #!/bin/bash
-# /home/wifi-tracker/start-wifi-tracker.sh
+# /home/bonjour-network/start-bonjour-network.sh
 
-cd /home/wifi-tracker/wifi-tracker
+cd /home/bonjour-network/bonjour-network
 export NODE_OPTIONS="--max-old-space-size=512"
 npm start
 ```
@@ -342,10 +342,10 @@ hostname -I
 
 ```bash
 # Ajouter dans /etc/hosts sur les autres appareils
-192.168.1.100 wifi-tracker.local
+192.168.1.100 bonjour-network.local
 
 # Accéder via
-# http://wifi-tracker.local:5001
+# http://bonjour-network.local:5001
 ```
 
 ### **3. Reverse proxy avec Nginx**
@@ -355,11 +355,11 @@ hostname -I
 sudo apt install nginx
 
 # Configuration
-sudo nano /etc/nginx/sites-available/wifi-tracker
+sudo nano /etc/nginx/sites-available/bonjour-network
 
 server {
     listen 80;
-    server_name wifi-tracker.local;
+    server_name bonjour-network.local;
 
     location / {
         proxy_pass http://localhost:5001;
@@ -372,7 +372,7 @@ server {
 }
 
 # Activer
-sudo ln -s /etc/nginx/sites-available/wifi-tracker /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/bonjour-network /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
@@ -383,65 +383,5 @@ sudo systemctl restart nginx
 
 ```bash
 # Script d'installation complète
-curl -fsSL https://raw.githubusercontent.com/magikcypress/wifi-tracker/main/scripts/raspberry-pi-setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/magikcypress/bonjour-network/main/scripts/raspberry-pi-setup.sh | bash
 ```
-
-### **2. Monitoring**
-
-```bash
-# Installation de monitoring
-sudo apt install htop iotop
-
-# Surveillance automatique
-watch -n 5 'free -h && df -h && vcgencmd measure_temp'
-```
-
-## ✅ **Vérification de l'installation**
-
-```bash
-# Tester l'API
-curl http://localhost:5001/api/networks
-
-# Vérifier les logs
-tail -f logs/combined.log
-
-# Vérifier les processus
-ps aux | grep node
-
-# Vérifier les ports
-netstat -tlnp | grep 5001
-```
-
----
-
-## 🎯 **Conclusion**
-
-**WiFi Tracker fonctionne parfaitement sur Raspberry Pi !**
-
-### **✅ Avantages :**
-
-- **Faible consommation** - Idéal pour un serveur 24/7
-- **Coût réduit** - Solution économique
-- **Silencieux** - Pas de ventilateur
-- **Compact** - Prend peu de place
-- **Énergétiquement efficace** - 5W de consommation
-
-### **⚠️ Points d'attention :**
-
-- **Performance** - Plus lent qu'un serveur dédié
-- **Mémoire** - Limité à 4GB max sur Pi 4
-- **Stockage** - Carte SD moins rapide qu'un SSD
-- **Réseau** - WiFi intégré peut être limité
-
-### **🚀 Recommandations :**
-
-1. **Utiliser un Pi 4** avec 4GB RAM
-2. **Carte SD classe 10** ou SSD externe
-3. **Connexion Ethernet** pour de meilleures performances
-4. **Monitoring** des ressources
-5. **Backup** régulier de la configuration
-
----
-
-**Dernière mise à jour :** 19 Juillet 2025  
-**Testé sur :** Raspberry Pi 4 (4GB RAM)

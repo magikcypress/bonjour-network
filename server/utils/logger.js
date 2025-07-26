@@ -10,7 +10,7 @@ const logger = winston.createLogger({
         winston.format.json()
     ),
     defaultMeta: {
-        service: 'wifi-tracker',
+        service: 'bonjour-network',
         version: process.env.npm_package_version || '1.0.0'
     },
     transports: [

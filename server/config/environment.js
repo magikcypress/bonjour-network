@@ -240,7 +240,7 @@ class EnvironmentValidator {
      * @param {Object} config - Configuration à afficher
      */
     static printConfigSummary(config) {
-        console.log('🔧 Configuration WiFi Tracker:');
+        console.log('🔧 Configuration Bonjour Network:');
         console.log(`  - Environnement: ${config.NODE_ENV}`);
         console.log(`  - Port: ${config.PORT}`);
         console.log(`  - Log Level: ${config.LOG_LEVEL}`);

@@ -1,4 +1,4 @@
-# 📁 Structure du Projet WiFi Tracker (Nettoyée)
+# 📁 Structure du Projet Bonjour Network (Nettoyée)
 
 ## 🎯 **Vue d'Ensemble**
 
@@ -7,7 +7,7 @@ Le projet a été nettoyé pour ne conserver que les fichiers essentiels et fonc
 ## 📂 **Structure Principale**
 
 ```
-wifi-tracker/
+bonjour-network/
 ├── 🚀 Scripts de Gestion
 │   ├── start-app.sh          # Démarrage complet de l'application
 │   ├── stop-app.sh           # Arrêt propre de l'application
@@ -109,65 +109,4 @@ wifi-tracker/
 |---------|-------------|
 | `package.json` | Configuration Node.js et dépendances |
 | `.gitignore` | Fichiers ignorés par Git |
-| `.dockerignore` | Fichiers ignorés par Docker |
-
-## 📊 **URLs d'Accès**
-
-- **🌐 Frontend** : <http://localhost:3000>
-- **🔧 Backend** : <http://localhost:5001>
-- **📡 API** : <http://localhost:5001/api>
-- **🏥 Health** : <http://localhost:5001/api/health>
-
-## 🎯 **Fichiers Supprimés**
-
-### **Scripts de Test Temporaires**
-
-- `test-connectivity.js`
-- `test-sync-coherence.js`
-- `test-integration-complete.js`
-- `test-client-coherence.js`
-- `test-data-coherence.js`
-- `test-refactored-server.js`
-
-### **Scripts de Diagnostic Temporaires**
-
-- `debug-api-connection.js`
-- `check-page-status.js`
-- `check-page-status-simple.js`
-
-### **Documentation Temporaire**
-
-- `SOLUTION_CONNECTIVITY.md`
-- `SOLUTION_NETWORK_ERROR.md`
-- `PAGE_STATUS_REPORT.md`
-- `TROUBLESHOOTING_CONNECTIVITY.md`
-- `QUICK_START.md`
-
-### **Documentation Obsolète**
-
-- `REFACTORING_SUMMARY.md`
-- `REFACTORING_FINAL_SUMMARY.md`
-- `REFACTORING_FINAL_STATUS.md`
-- `FINAL_REFACTORING_SUMMARY.md`
-- `CLIENT_REFACTORING_SUMMARY.md`
-
-## ✅ **Avantages du Nettoyage**
-
-1. **📁 Structure plus claire** - Fichiers organisés logiquement
-2. **🚀 Démarrage plus rapide** - Moins de fichiers à traiter
-3. **🔍 Navigation plus facile** - Fichiers essentiels mis en avant
-4. **📦 Taille réduite** - Moins d'espace disque utilisé
-5. **🛠️ Maintenance simplifiée** - Moins de fichiers à maintenir
-
-## 🎉 **Résultat**
-
-Le projet est maintenant **propre, organisé et fonctionnel** avec seulement les fichiers essentiels conservés. Toutes les fonctionnalités sont préservées tout en améliorant la lisibilité et la maintenabilité du code.
-
----
-
-**📊 Statistiques du nettoyage :**
-
-- ✅ **17 fichiers supprimés**
-- ✅ **Structure simplifiée**
-- ✅ **Fonctionnalités préservées**
-- ✅ **Documentation consolidée**
+| `.dockerignore`

@@ -1,8 +1,14 @@
 {
-  "48E15C": {
-    "manufacturer": "Samsung Electronics",
-    "confidence": 0.8,
-    "addedAt": "2025-07-21T15:21:03.866Z",
-    "mac": "48:e1:5c:aa:5c:15"
+  "96E840": {
+    "manufacturer": "LG Electronics",
+    "confidence": 0.75,
+    "addedAt": "2025-07-26T11:01:42.466Z",
+    "mac": "96:e8:40:ee:aa:2e"
+  },
+  "B827EB": {
+    "manufacturer": "Raspberry Pi Foundation",
+    "confidence": 0.95,
+    "addedAt": "2025-07-26T11:01:42.474Z",
+    "mac": "b8:27:eb:e6:42:2d"
   }
 }

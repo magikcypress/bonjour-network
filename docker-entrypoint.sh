@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
-# Script d'entrée pour WiFi Tracker Docker
+# Script d'entrée pour Bonjour Network Docker
 
 set -e
 
-echo "🚀 Démarrage de WiFi Tracker..."
+echo "🚀 Démarrage de Bonjour Network..."
 
 # Vérifier les variables d'environnement
 echo "📋 Configuration :"

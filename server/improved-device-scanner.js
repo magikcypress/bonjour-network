@@ -43,7 +43,8 @@ class ImprovedDeviceScanner {
             // Initialiser les informations réseau
             await this.initializeNetworkInfo();
 
-            const timeoutMs = scanMode === 'complete' ? 90000 : 25000;
+            // Timeout adapté selon le mode de scan
+            const timeoutMs = scanMode === 'complete' ? 180000 : 30000; // 3 min pour complet, 30s pour rapide
             const timeoutPromise = new Promise((_, reject) =>
                 setTimeout(() => reject(new Error(`Scan timeout - ${timeoutMs / 1000} secondes dépassées`)), timeoutMs)
             );
@@ -131,41 +132,67 @@ class ImprovedDeviceScanner {
             this.emitProgress('dns', 'error', `Erreur DNS: ${error.message}`);
         }
 
+        // 4. Mini-ping sweep ciblé (pour mode fast et complete)
+        this.emitProgress('quick-ping', 'start', 'Mini-ping sweep ciblé...', null, 'ping -c 1 -W 300');
+        try {
+            const quickPingDevices = await this.quickTargetedPingSweep();
+            this.addDevicesToMap(quickPingDevices, allDevices);
+            this.emitProgress('quick-ping', 'success', `Mini-ping: ${quickPingDevices.length} appareils`);
+        } catch (error) {
+            this.emitProgress('quick-ping', 'error', `Erreur mini-ping: ${error.message}`);
+        }
+
         if (scanMode === 'complete') {
-            // 4. Ping sweep intelligent (seulement les IPs probables)
+            // 5. Ping sweep intelligent (seulement les IPs probables) - avec timeout
             this.emitProgress('ping', 'start', 'Ping sweep intelligent...', null, 'ping -c 1 -W 500');
             try {
-                const pingDevices = await this.intelligentPingSweep();
+                const pingPromise = this.intelligentPingSweep();
+                const pingTimeout = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Ping sweep timeout')), 30000)
+                );
+                const pingDevices = await Promise.race([pingPromise, pingTimeout]);
                 this.addDevicesToMap(pingDevices, allDevices);
                 this.emitProgress('ping', 'success', `Ping sweep: ${pingDevices.length} appareils`);
             } catch (error) {
                 this.emitProgress('ping', 'error', `Erreur ping: ${error.message}`);
             }
 
-            // 5. Scan nmap (si disponible)
+            // 6. Scan nmap (si disponible) - avec timeout court
             this.emitProgress('nmap', 'start', 'Scan nmap...', null, 'nmap -sn');
             try {
-                const nmapDevices = await this.scanWithNmap();
+                const nmapPromise = this.scanWithNmap();
+                const nmapTimeout = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Nmap timeout')), 15000)
+                );
+                const nmapDevices = await Promise.race([nmapPromise, nmapTimeout]);
                 this.addDevicesToMap(nmapDevices, allDevices);
                 this.emitProgress('nmap', 'success', `Scan nmap: ${nmapDevices.length} appareils`);
             } catch (error) {
                 this.emitProgress('nmap', 'error', `Erreur nmap: ${error.message}`);
             }
 
-            // 6. Scan arping (si disponible)
+            // 7. Scan arping (si disponible) - avec timeout court
             this.emitProgress('arping', 'start', 'Scan arping...', null, 'arping -c 1');
             try {
-                const arpingDevices = await this.scanWithArping();
+                const arpingPromise = this.scanWithArping();
+                const arpingTimeout = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Arping timeout')), 15000)
+                );
+                const arpingDevices = await Promise.race([arpingPromise, arpingTimeout]);
                 this.addDevicesToMap(arpingDevices, allDevices);
                 this.emitProgress('arping', 'success', `Scan arping: ${arpingDevices.length} appareils`);
             } catch (error) {
                 this.emitProgress('arping', 'error', `Erreur arping: ${error.message}`);
             }
 
-            // 7. Scan Bonjour amélioré
+            // 8. Scan Bonjour amélioré - avec timeout court
             this.emitProgress('bonjour', 'start', 'Scan Bonjour amélioré...', null, 'dns-sd -B');
             try {
-                const bonjourDevices = await this.improvedBonjourScan();
+                const bonjourPromise = this.improvedBonjourScan();
+                const bonjourTimeout = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Bonjour timeout')), 10000)
+                );
+                const bonjourDevices = await Promise.race([bonjourPromise, bonjourTimeout]);
                 this.addDevicesToMap(bonjourDevices, allDevices);
                 this.emitProgress('bonjour', 'success', `Bonjour: ${bonjourDevices.length} services`);
             } catch (error) {
@@ -193,13 +220,23 @@ class ImprovedDeviceScanner {
             if (scanMode === 'complete') {
                 console.log('🔍 DEBUG: Mode complet - Lancement identification Mistral AI');
                 this.emitProgress('mistral', 'start', 'Identification Mistral AI...', null, 'Mistral AI API');
-                const identifiedDevices = await this.identifyDevicesWithMistralAI(devices);
 
-                // Re-prioriser après identification
-                const finalDevices = this.prioritizeDevicesByQuality(identifiedDevices);
+                try {
+                    const identifiedDevices = await this.identifyDevicesWithMistralAI(devices);
 
-                this.emitProgress('mistral', 'success', `Identification: ${finalDevices.length} appareils`);
-                return finalDevices;
+                    // Re-prioriser après identification
+                    const finalDevices = this.prioritizeDevicesByQuality(identifiedDevices);
+
+                    this.emitProgress('mistral', 'success', `Identification: ${finalDevices.length} appareils`);
+                    return finalDevices;
+                } catch (error) {
+                    console.error('❌ Erreur lors de l\'identification Mistral AI:', error);
+                    this.emitProgress('mistral', 'error', `Erreur identification: ${error.message}`);
+
+                    // En cas d'erreur, retourner les appareils sans identification
+                    const finalDevices = this.prioritizeDevicesByQuality(devices);
+                    return finalDevices;
+                }
             } else {
                 // Mode fast - pas d'identification Mistral AI
                 console.log(`🔍 DEBUG: Mode rapide (${scanMode}) - Identification Mistral AI ignorée`);
@@ -385,6 +422,47 @@ class ImprovedDeviceScanner {
         return devices;
     }
 
+    async quickTargetedPingSweep() {
+        if (!this.networkRange) return [];
+
+        const devices = [];
+        const baseIp = this.networkRange.split('.');
+
+        // IPs ciblées pour le scan rapide (les plus communes)
+        const targetIps = [1, 2, 10, 100, 254]; // Gateway, début range, milieu, fin range
+
+        console.log(`🎯 Mini-ping sweep ciblé sur ${targetIps.length} IPs typiques...`);
+
+        // Scanner en parallèle pour plus de rapidité
+        const promises = targetIps.map(async (lastOctet) => {
+            const ip = `${baseIp[0]}.${baseIp[1]}.${baseIp[2]}.${lastOctet}`;
+            try {
+                const device = await this.pingHost(ip);
+                if (device) {
+                    console.log(`✅ Découvert via mini-ping: ${ip}`);
+                    return device;
+                }
+            } catch (error) {
+                // Ignorer les erreurs silencieusement
+            }
+            return null;
+        });
+
+        try {
+            const results = await Promise.allSettled(promises);
+            for (const result of results) {
+                if (result.status === 'fulfilled' && result.value) {
+                    devices.push(result.value);
+                }
+            }
+        } catch (error) {
+            console.error('Erreur lors du mini-ping sweep:', error);
+        }
+
+        console.log(`🎯 Mini-ping sweep terminé: ${devices.length} appareils découverts`);
+        return devices;
+    }
+
     async improvedBonjourScan() {
         try {
             const devices = [];
@@ -440,23 +518,37 @@ class ImprovedDeviceScanner {
 
     async pingHost(ip) {
         try {
-            const result = await CommandValidator.safeExec(`ping -c 1 -W 500 ${ip}`);
+            // Timeout plus court pour le scan rapide (300ms au lieu de 500ms)
+            const result = await CommandValidator.safeExec(`ping -c 1 -W 300 ${ip}`);
             if (result.success) {
-                // Obtenir la MAC via ARP
-                const arpResult = await CommandValidator.safeExec(`arp -n ${ip}`);
-                if (arpResult.success) {
-                    const macMatch = arpResult.stdout.match(/at ([0-9a-fA-F:]+)/);
-                    if (macMatch) {
-                        return {
-                            ip: ip,
-                            mac: macMatch[1],
-                            hostname: 'Unknown',
-                            deviceType: 'Unknown',
-                            lastSeen: new Date().toISOString(),
-                            isActive: true,
-                            source: 'ping'
-                        };
+                // Obtenir la MAC via ARP avec timeout court
+                try {
+                    const arpResult = await CommandValidator.safeExec(`arp -n ${ip}`);
+                    if (arpResult.success) {
+                        const macMatch = arpResult.stdout.match(/at ([0-9a-fA-F:]+)/);
+                        if (macMatch) {
+                            return {
+                                ip: ip,
+                                mac: macMatch[1].toLowerCase(),
+                                hostname: 'Unknown',
+                                deviceType: 'Unknown',
+                                lastSeen: new Date().toISOString(),
+                                isActive: true,
+                                source: 'ping'
+                            };
+                        }
                     }
+                } catch (arpError) {
+                    // Si ARP échoue, retourner quand même l'appareil sans MAC
+                    return {
+                        ip: ip,
+                        mac: 'N/A',
+                        hostname: 'Unknown',
+                        deviceType: 'Unknown',
+                        lastSeen: new Date().toISOString(),
+                        isActive: true,
+                        source: 'ping'
+                    };
                 }
             }
             return null;
@@ -602,46 +694,84 @@ class ImprovedDeviceScanner {
             const ManufacturerService = require('./manufacturer-service');
             const manufacturerService = new ManufacturerService();
 
-            for (const device of devices) {
-                if (device.mac && device.mac !== 'N/A' && this.isValidMac(device.mac)) {
-                    try {
-                        const manufacturerInfo = await manufacturerService.identifyManufacturer(device.mac);
-                        if (manufacturerInfo && manufacturerInfo.identified) {
-                            // Fusion intelligente des informations fabricant
-                            if (manufacturerInfo.manufacturer && manufacturerInfo.manufacturer !== 'Unknown Manufacturer') {
-                                device.manufacturer = manufacturerInfo.manufacturer;
-                            }
+            // Timeout pour éviter le blocage (30 secondes max)
+            const timeoutMs = 30000;
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Timeout identification Mistral AI')), timeoutMs)
+            );
 
-                            // Ne pas écraser le deviceType existant, seulement si pas défini
-                            if (!device.deviceType || device.deviceType === 'Unknown' || device.deviceType === 'Unknown Device') {
-                                device.deviceType = manufacturerInfo.deviceType || device.deviceType;
-                            }
-
-                            // Ajouter les informations de confiance
-                            device.manufacturerConfidence = manufacturerInfo.confidence || 0;
-                            device.manufacturerSource = manufacturerInfo.source || 'mistral';
-                            device.manufacturerIdentified = manufacturerInfo.identified;
-
-                            console.log(`✅ Identifié: ${device.mac} → ${manufacturerInfo.manufacturer} (confiance: ${manufacturerInfo.confidence})`);
-                        } else {
-                            console.log(`❌ Non identifié: ${device.mac}`);
-                            device.manufacturerIdentified = false;
-                        }
-                    } catch (error) {
-                        console.log(`⚠️ Erreur identification pour ${device.mac}:`, error.message);
-                        device.manufacturerIdentified = false;
-                    }
-                } else {
-                    console.log(`⚠️ Pas de MAC valide pour ${device.ip}`);
-                    device.manufacturerIdentified = false;
-                }
-            }
+            // Traitement avec timeout
+            const identificationPromise = this.processDeviceIdentification(devices, manufacturerService);
+            await Promise.race([identificationPromise, timeoutPromise]);
 
             return devices;
         } catch (error) {
             console.error('❌ Erreur identification Mistral AI:', error);
+            // En cas d'erreur, retourner les appareils sans identification
+            devices.forEach(device => {
+                device.manufacturerIdentified = false;
+                device.manufacturerConfidence = 0;
+            });
             return devices;
         }
+    }
+
+    async processDeviceIdentification(devices, manufacturerService) {
+        const devicesWithMac = devices.filter(device =>
+            device.mac && device.mac !== 'N/A' && this.isValidMac(device.mac)
+        );
+
+        console.log(`🔍 Identification de ${devicesWithMac.length} appareils avec MAC valide...`);
+
+        // Traitement en parallèle avec limite de concurrence
+        const batchSize = 3; // Traiter 3 appareils en parallèle
+        const results = [];
+
+        for (let i = 0; i < devicesWithMac.length; i += batchSize) {
+            const batch = devicesWithMac.slice(i, i + batchSize);
+            const batchPromises = batch.map(async (device) => {
+                try {
+                    const manufacturerInfo = await manufacturerService.identifyManufacturer(device.mac);
+                    if (manufacturerInfo && manufacturerInfo.identified) {
+                        // Fusion intelligente des informations fabricant
+                        if (manufacturerInfo.manufacturer && manufacturerInfo.manufacturer !== 'Unknown Manufacturer') {
+                            device.manufacturer = manufacturerInfo.manufacturer;
+                        }
+
+                        // Ne pas écraser le deviceType existant, seulement si pas défini
+                        if (!device.deviceType || device.deviceType === 'Unknown' || device.deviceType === 'Unknown Device') {
+                            device.deviceType = manufacturerInfo.deviceType || device.deviceType;
+                        }
+
+                        // Ajouter les informations de confiance
+                        device.manufacturerConfidence = manufacturerInfo.confidence || 0;
+                        device.manufacturerSource = manufacturerInfo.source || 'mistral';
+                        device.manufacturerIdentified = manufacturerInfo.identified;
+
+                        console.log(`✅ Identifié: ${device.mac} → ${manufacturerInfo.manufacturer} (confiance: ${manufacturerInfo.confidence})`);
+                    } else {
+                        console.log(`❌ Non identifié: ${device.mac}`);
+                        device.manufacturerIdentified = false;
+                    }
+                } catch (error) {
+                    console.log(`⚠️ Erreur identification pour ${device.mac}:`, error.message);
+                    device.manufacturerIdentified = false;
+                }
+            });
+
+            // Attendre que le batch soit terminé avant de passer au suivant
+            await Promise.allSettled(batchPromises);
+        }
+
+        // Marquer les appareils sans MAC comme non identifiés
+        devices.forEach(device => {
+            if (!device.mac || device.mac === 'N/A' || !this.isValidMac(device.mac)) {
+                console.log(`⚠️ Pas de MAC valide pour ${device.ip}`);
+                device.manufacturerIdentified = false;
+            }
+        });
+
+        return devices;
     }
 
     isValidMac(mac) {
