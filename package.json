@@ -1,6 +1,6 @@
 {
     "name": "bonjour-network",
-    "version": "1.0.0",
+    "version": "2.3.0",
     "description": "Application moderne de surveillance et gestion de réseau WiFi",
     "main": "server/index.js",
     "scripts": {
