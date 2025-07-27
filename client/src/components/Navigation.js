@@ -26,6 +26,13 @@ function Navigation({
             icon: Smartphone,
             count: deviceCount,
             description: 'Appareils connectés'
+        },
+        {
+            id: 'dns',
+            name: 'DNS & Services',
+            icon: Signal,
+            count: 0,
+            description: 'Résolution DNS et services'
         }
     ];
 

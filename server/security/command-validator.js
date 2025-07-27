@@ -4,59 +4,61 @@ const execAsync = util.promisify(exec);
 
 class CommandValidator {
     // Liste blanche des commandes autorisées
-    static allowedCommands = new Set([
-        // Commandes réseau de base
-        'arp', 'netstat', 'ifconfig', 'ping', 'nmap', 'dns-sd',
+    static get allowedCommands() {
+        return new Set([
+            // Commandes réseau de base
+            'arp', 'netstat', 'ifconfig', 'ping', 'nmap', 'dns-sd',
 
-        // Commandes réseau Linux
-        'ip',
+            // Commandes réseau Linux
+            'ip',
 
-        // Commandes WiFi macOS
-        'airport', 'system_profiler', 'networksetup', 'wdutil', 'route',
-        '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport',
+            // Commandes WiFi macOS
+            'airport', 'system_profiler', 'networksetup', 'wdutil', 'route',
+            '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport',
 
-        // Commandes WiFi Linux/Raspberry Pi
-        'iwlist', 'nmcli', 'iw', 'iwconfig',
+            // Commandes WiFi Linux/Raspberry Pi
+            'iwlist', 'nmcli', 'iw', 'iwconfig',
 
-        // Commandes de découverte réseau
-        'arping', 'scutil', 'arp-scan',
+            // Commandes de découverte réseau
+            'arping', 'scutil', 'arp-scan',
 
-        // Commandes système avec sudo
-        'sudo',
+            // Commandes système avec sudo
+            'sudo',
 
-        // Commandes de test
-        'which', 'echo', 'cat', 'grep', 'perl'
-    ]);
+            // Commandes de test
+            'which', 'echo', 'cat', 'grep', 'perl'
+        ]);
+    }
 
     // Paramètres autorisés pour chaque commande
-    static allowedParams = {
-        'arp': ['-a', '-n'],
-        'netstat': ['-rn', '-an'],
-        'ifconfig': ['en0', 'en1', 'lo0', 'wlan0', 'eth0'],
-        'ping': ['-c', '1', '-W', '1000', '500', '300'],
-        'nmap': ['-sn', '-PR', '--max-retries', '1', '--min-rate', '100', '200', '--host-timeout', '1s', '5s', '192.168.1.0/24'],
-        'dns-sd': ['-B', '_http._tcp', '_https._tcp', '_ssh._tcp', '_ftp._tcp', '_smb._tcp', '_airplay._tcp', 'local', '2>/dev/null'],
-        'airport': ['-s'],
-        'system_profiler': ['SPAirPortDataType'],
-        'networksetup': ['-listallnetworkservices', '-getinfo', 'Wi-Fi', 'AirPort', 'Ethernet', 'AX88179A'],
-        '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport': ['-s'],
-        'arping': ['-I', 'en0', 'wlan0', 'eth0', '-c', '1', '-W', '1000'],
-        'scutil': ['--nwi'],
-        'route': ['-n', 'get', '1.1.1.1'],
-        'which': ['nmap', 'arping', 'arp-scan', 'iwlist', 'nmcli', 'iw'],
-        'perl': ['-e', 'alarm'],
-        'wdutil': ['info'],
-        // Commandes Linux/Raspberry Pi
-        'iwlist': ['scan', 'wlan0', 'eth0'],
-        'nmcli': ['device', 'wifi', 'list'],
-        'iw': ['dev', 'wlan0', 'scan'],
-        'iwconfig': ['wlan0', 'eth0'],
-        'arp-scan': ['--localnet', '--timeout', '1000', '--interface', 'wlan0', 'eth0'],
-        'sudo': ['arp-scan', 'nmap', 'arping', 'iwlist', 'iw', '--localnet', '--timeout', '1000', '-sn', '--max-retries', '1', '--host-timeout', '1s', '192.168.1.0/24', 'scan', 'wlan0', 'eth0', '-I', '-c', '1', '-W', '1000'],
-        'ip': ['route', 'get', 'addr', 'show', 'link', '1.1.1.1', '192.168.1.1'],
-        'airport': ['-s'],
-        'system_profiler': ['SPAirPortDataType']
-    };
+    static get allowedParams() {
+        return {
+            'arp': ['-a', '-n'],
+            'netstat': ['-rn', '-an'],
+            'ifconfig': ['en0', 'en1', 'lo0', 'wlan0', 'eth0'],
+            'ping': ['-c', '1', '-W', '1000', '500', '300'],
+            'nmap': ['-sn', '-PR', '--max-retries', '1', '--min-rate', '100', '200', '--host-timeout', '1s', '5s', '192.168.1.0/24'],
+            'dns-sd': ['-B', '_http._tcp', '_https._tcp', '_ssh._tcp', '_ftp._tcp', '_smb._tcp', '_airplay._tcp', 'local', '2>/dev/null'],
+            'airport': ['-s'],
+            'system_profiler': ['SPAirPortDataType'],
+            'networksetup': ['-listallnetworkservices', '-getinfo', 'Wi-Fi', 'AirPort', 'Ethernet', 'AX88179A'],
+            '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport': ['-s'],
+            'arping': ['-I', 'en0', 'wlan0', 'eth0', '-c', '1', '-W', '1000'],
+            'scutil': ['--nwi'],
+            'route': ['-n', 'get', '1.1.1.1'],
+            'which': ['nmap', 'arping', 'arp-scan', 'iwlist', 'nmcli', 'iw'],
+            'perl': ['-e', 'alarm'],
+            'wdutil': ['info'],
+            // Commandes Linux/Raspberry Pi
+            'iwlist': ['scan', 'wlan0', 'eth0'],
+            'nmcli': ['device', 'wifi', 'list'],
+            'iw': ['dev', 'wlan0', 'scan'],
+            'iwconfig': ['wlan0', 'eth0'],
+            'arp-scan': ['--localnet', '--timeout', '1000', '--interface', 'wlan0', 'eth0'],
+            'sudo': ['arp-scan', 'nmap', 'arping', 'iwlist', 'iw', '--localnet', '--timeout', '1000', '-sn', '--max-retries', '1', '--host-timeout', '1s', '192.168.1.0/24', 'scan', 'wlan0', 'eth0', '-I', '-c', '1', '-W', '1000'],
+            'ip': ['route', 'get', 'addr', 'show', 'link', '1.1.1.1', '192.168.1.1']
+        };
+    }
 
     /**
      * Parse une commande en gérant les guillemets

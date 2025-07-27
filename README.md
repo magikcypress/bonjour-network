@@ -25,6 +25,17 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 - **Interface dédiée** : Page "Réseaux" avec liste complète des réseaux
 - **Mise à jour manuelle** : Scan à la demande via bouton "Scanner maintenant"
 
+### 🌐 **Scan DNS & Services**
+
+- **Résolution DNS intelligente** : Test de 100+ hôtes communs (router, nas, printer, etc.)
+- **Messages d'erreur compréhensibles** : Explications en français clair
+- **Classification par type** : Routeur, NAS, Imprimante, TV, Console, IoT, etc.
+- **Interface focalisée** : Affichage propre des hôtes résolus par défaut
+- **Toggle d'affichage** : Option pour voir tous les hôtes (résolus + échecs)
+- **Statistiques détaillées** : Total, résolus, échecs, temps moyen
+- **Services réseau** : Détection HTTP, SSH, Bonjour/mDNS
+- **Interface dédiée** : Onglet "DNS & Services" avec scan manuel
+
 ### 📊 **Interface Moderne**
 
 - **Design responsive** : Compatible mobile, tablette, desktop
@@ -32,7 +43,8 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 - **Progression visuelle** : Suivi en temps réel des scans
 - **Filtres avancés** : Recherche et tri des appareils
 - **Affichage intelligent** : Noms d'appareils, fabricants, types
-- **Pages séparées** : Appareils et Réseaux dans des onglets distincts
+- **Navigation par onglets** : Appareils, Réseaux, DNS & Services
+- **Scans manuels** : Contrôle total des scans (pas d'automatique)
 
 ### 🔒 **Sécurité Renforcée**
 
@@ -80,6 +92,14 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 - **Bonjour/mDNS** : Services réseau (HTTP, HTTPS, SSH)
 - **DNS inversé** : Résolution d'hôtes
 - **Extraction MAC** : Détection des adresses MAC
+
+### **Scan DNS & Services**
+
+- **nslookup** : Résolution DNS des hôtes communs
+- **Classification intelligente** : Identification du type d'appareil
+- **Messages d'erreur clairs** : Explications en français compréhensible
+- **Services réseau** : Détection HTTP, SSH, Bonjour/mDNS
+- **Statistiques détaillées** : Métriques de performance DNS
 
 ### **Scan WiFi**
 
@@ -174,6 +194,7 @@ curl -fsSL https://raw.githubusercontent.com/magikcypress/bonjour-network/main/s
 - **[Améliorations Scanner](docs/SCANNER_IMPROVEMENTS.md)** : Nouvelles fonctionnalités
 - **[API Endpoints](docs/API_ENDPOINTS_IMPROVED.md)** : Documentation API complète
 - **[Scan WiFi](docs/WIFI_SCANNING.md)** : Guide complet du scan WiFi
+- **[Scan DNS & Services](docs/DNS_SCANNING.md)** : Guide complet du scan DNS
 
 ## 🔧 Configuration
 

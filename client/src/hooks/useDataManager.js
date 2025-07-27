@@ -7,16 +7,22 @@ export const useDataManager = (activeTab = 'networks') => {
     const [data, setData] = useState({
         networks: [],
         devices: [],
+        dnsData: {},
+        servicesData: {},
+        portsData: {},
+        historyData: {},
         networkCount: 0,
         deviceCount: 0
     });
     const [loading, setLoading] = useState({
         networks: false,
-        devices: false
+        devices: false,
+        dns: false
     });
     const [error, setError] = useState({
         networks: null,
-        devices: null
+        devices: null,
+        dns: null
     });
     const [realTimeScan, setRealTimeScan] = useState({
         enabled: false,
@@ -90,6 +96,28 @@ export const useDataManager = (activeTab = 'networks') => {
         }
     };
 
+    const loadDnsServices = async () => {
+        try {
+            setLoading(prev => ({ ...prev, dns: true }));
+            const response = await apiService.getDnsServices();
+
+            console.log('🔍 Données DNS & Services reçues:', response);
+
+            setData(prevData => ({
+                ...prevData,
+                dnsData: response.dnsData || {},
+                servicesData: response.servicesData || {},
+                historyData: response.historyData || {}
+            }));
+        } catch (error) {
+            const errorMessage = error.message || 'Erreur lors du chargement DNS & Services';
+            console.error('❌ Erreur lors du chargement DNS & Services:', errorMessage);
+            setError(prev => ({ ...prev, dns: errorMessage }));
+        } finally {
+            setLoading(prev => ({ ...prev, dns: false }));
+        }
+    };
+
     // Chargement initial des données et gestion des WebSockets selon la page
     useEffect(() => {
         console.log(`[useDataManager] useEffect déclenché avec activeTab =`, activeTab);
@@ -141,6 +169,9 @@ export const useDataManager = (activeTab = 'networks') => {
                         console.error('❌ Erreur lors de la connexion WebSocket:', error);
                         setSocketConnected(false);
                     }
+                } else if (activeTab === 'dns') {
+                    console.log('🌐 Page DNS & Services - pas de WebSocket nécessaire');
+                    // Pour DNS & Services, pas de chargement automatique
                 } else {
                     // Pour les autres pages, déconnecter WebSocket
                     if (socketService.isSocketConnected()) {
@@ -506,6 +537,7 @@ export const useDataManager = (activeTab = 'networks') => {
         // Actions
         loadNetworks,
         loadDevices,
+        loadDnsServices,
         startScan,
         cancelScan,
         startRealTimeScan,

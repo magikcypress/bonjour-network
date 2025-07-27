@@ -1,20 +1,17 @@
 const express = require('express');
-const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const wifi = require('node-wifi');
-const path = require('path');
 const rateLimit = require('express-rate-limit');
 const winston = require('winston');
 // Correctif pour les avertissements de dépréciation
 require('./utils/deprecation-fix');
 
-const DeviceScanner = require('./device-scanner');
 const ImprovedDeviceScanner = require('./improved-device-scanner');
-const MistralAIService = require('./mistral-ai-service');
-const ManufacturerService = require('./manufacturer-service');
 const DataFormatter = require('./utils/data-formatter');
 const NetworkDetector = require('./utils/network-detector');
+const MistralAIService = require('./mistral-ai-service');
+const ManufacturerService = require('./manufacturer-service');
 
 // Import des modules de sécurité
 const EnvironmentValidator = require('./config/environment');
@@ -332,6 +329,43 @@ app.get('/api/devices/complete', async (req, res) => {
         res.json(devices);
     } catch (error) {
         console.error('Erreur lors du scan complet des appareils:', error);
+        res.status(500).json({
+            error: process.env.NODE_ENV === 'production'
+                ? 'Erreur interne du serveur'
+                : error.message
+        });
+    }
+});
+
+// Endpoint pour scanner DNS & Services
+app.get('/api/dns-services', async (req, res) => {
+    try {
+        logger.info(`Scan DNS & Services demandé par IP: ${req.ip}`);
+
+        const DnsScanner = require('./utils/dns-scanner');
+        const scanner = new DnsScanner();
+
+        // Scanner tous les composants DNS & Services
+        const [dnsData, servicesData, portsData, historyData] = await Promise.allSettled([
+            scanner.scanDnsHosts(),
+            scanner.scanServices(),
+            scanner.scanPorts(),
+            scanner.getDnsHistory()
+        ]);
+
+        // Préparer la réponse
+        const response = {
+            dnsData: dnsData.status === 'fulfilled' ? dnsData.value : { hosts: [], statistics: {} },
+            servicesData: servicesData.status === 'fulfilled' ? servicesData.value : { services: [], bonjour: [] },
+            portsData: portsData.status === 'fulfilled' ? portsData.value : { ports: [], summary: {} },
+            historyData: historyData.status === 'fulfilled' ? historyData.value : { cache: [], recent: [] }
+        };
+
+        logger.info(`Scan DNS & Services: ${response.dnsData.hosts.length} hôtes, ${response.servicesData.services.length} services, ${response.portsData.ports.length} ports`);
+
+        res.json(response);
+    } catch (error) {
+        logger.error('Erreur lors du scan DNS & Services:', error);
         res.status(500).json({
             error: process.env.NODE_ENV === 'production'
                 ? 'Erreur interne du serveur'

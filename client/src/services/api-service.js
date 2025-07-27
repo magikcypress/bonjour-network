@@ -131,6 +131,21 @@ class ApiService {
         return this.scanDevicesFast();
     }
 
+    // Récupération des données DNS & Services
+    async getDnsServices() {
+        try {
+            const response = await this.makeRequest({
+                method: 'GET',
+                url: '/dns-services',
+                timeout: 60000 // Timeout de 60 secondes pour le scan DNS
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Erreur lors du scan DNS & Services:', error.message || error);
+            throw new Error(error.message || 'Erreur lors du scan DNS & Services');
+        }
+    }
+
     // Scan des réseaux WiFi
     async scanNetworks() {
         try {

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useDataManager } from './hooks/useDataManager';
 import Navigation from './components/Navigation';
+import TabNavigation from './components/TabNavigation';
 import NetworkList from './components/NetworkList';
 import DeviceList from './components/DeviceList';
+import DnsServicesList from './components/DnsServicesList';
 import Footer from './components/Footer';
-// Import supprimé car validateConnectivity n'est plus utilisé
 
 /**
  * Composant principal de l'application WiFi Tracker
@@ -23,6 +24,7 @@ function App() {
         connectivity: dataManagerConnectivity,
         loadNetworks,
         loadDevices,
+        loadDnsServices,
         startScan,
         cancelScan,
         startRealTimeScan,
@@ -103,13 +105,19 @@ function App() {
                         </div>
                     )}
 
-                    {/* Navigation avec onglets */}
+                    {/* En-tête avec titre et statistiques */}
                     <Navigation
                         activeTab={activeTab}
                         onTabChange={handleTabChange}
                         networkCount={data.networkCount}
                         deviceCount={data.deviceCount}
                         connectivity={dataManagerConnectivity}
+                    />
+
+                    {/* Navigation par onglets */}
+                    <TabNavigation
+                        activeTab={activeTab}
+                        onTabChange={handleTabChange}
                     />
 
                     {/* Contenu des onglets */}
@@ -137,6 +145,17 @@ function App() {
                                 onStartScan={handleStartScan}
                                 onCancelScan={handleCancelScan}
                                 connectivity={dataManagerConnectivity}
+                            />
+                        )}
+                        {activeTab === 'dns' && (
+                            <DnsServicesList
+                                dnsData={data.dnsData || {}}
+                                servicesData={data.servicesData || {}}
+                                historyData={data.historyData || {}}
+                                loading={loading.dns}
+                                error={error.dns}
+                                onRefresh={loadDnsServices}
+                                onStartScan={loadDnsServices}
                             />
                         )}
                     </div>

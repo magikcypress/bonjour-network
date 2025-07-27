@@ -47,7 +47,6 @@ class WifiSystemProfilerScanner {
         let currentNetwork = null;
         let inOtherNetworks = false;
         let inCurrentNetwork = false;
-        let currentIndentation = 0;
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
@@ -102,16 +101,18 @@ class WifiSystemProfilerScanner {
                     const [key, value] = trimmedLine.split(':').map(s => s.trim());
 
                     switch (key) {
-                        case 'PHY Mode':
+                        case 'PHY Mode': {
                             currentNetwork.phyMode = value;
                             break;
-                        case 'Channel':
+                        }
+                        case 'Channel': {
                             const channelMatch = value.match(/(\d+)/);
                             if (channelMatch) {
                                 currentNetwork.channel = channelMatch[1];
                                 currentNetwork.frequency = this.getFrequencyFromChannel(parseInt(channelMatch[1]));
                             }
                             break;
+                        }
                         case 'Security':
                             currentNetwork.security = value;
                             break;

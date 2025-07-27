@@ -1,7 +1,4 @@
 const CommandValidator = require('./security/command-validator');
-const { exec } = require('child_process');
-const util = require('util');
-const execAsync = util.promisify(exec);
 const NetworkDetector = require('./utils/network-detector');
 
 console.log('🔍 DEBUG: ImprovedDeviceScanner chargé avec modifications Mistral AI');
@@ -561,7 +558,6 @@ class ImprovedDeviceScanner {
 
     async improvedBonjourScan() {
         try {
-            const devices = [];
             // Services les plus courants seulement pour éviter les timeouts
             const services = ['_http._tcp', '_https._tcp', '_ssh._tcp'];
 
@@ -623,7 +619,7 @@ class ImprovedDeviceScanner {
                         )
                     ]);
 
-                    const bonjourDevices = this.parseBonjourOutput(result, service);
+                    const bonjourDevices = this.parseBonjourOutput(result);
                     console.log(`✅ Service ${service}: ${bonjourDevices.length} appareils`);
                     allDevices.push(...bonjourDevices);
 
@@ -640,7 +636,7 @@ class ImprovedDeviceScanner {
         }
     }
 
-    parseBonjourOutput(output, service) {
+    parseBonjourOutput(output) {
         const devices = [];
         const lines = output.split('\n');
 
@@ -648,10 +644,10 @@ class ImprovedDeviceScanner {
             if (line.includes('Add') && line.includes('_tcp')) {
                 // Format: "16:52:45.348  Add        3  11 local.               _http._tcp.          Freebox Server"
                 // Regex simple pour capturer le service et le nom
-                let match = line.match(/Add\s+\d+\s+\d+\s+\d+\s+local\.\s+_([^\.]+)\._tcp\.\s+(.+)/);
+                let match = line.match(/Add\s+\d+\s+\d+\s+\d+\s+local\.\s+_([^.]+)\._tcp\.\s+(.+)/);
                 if (!match) {
                     // Essayer un regex encore plus simple
-                    match = line.match(/_([^\.]+)\._tcp\.\s+(.+)/);
+                    match = line.match(/_([^.]+)\._tcp\.\s+(.+)/);
                 }
                 if (match) {
                     const serviceType = match[1];
@@ -1050,8 +1046,6 @@ class ImprovedDeviceScanner {
 
         // Traitement en parallèle avec limite de concurrence
         const batchSize = 3; // Traiter 3 appareils en parallèle
-        const results = [];
-
         for (let i = 0; i < devicesWithMac.length; i += batchSize) {
             const batch = devicesWithMac.slice(i, i + batchSize);
             const batchPromises = batch.map(async (device) => {

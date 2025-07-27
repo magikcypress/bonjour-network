@@ -305,7 +305,7 @@ class DataFormatter {
         ];
 
         return devices.every(device => {
-            return requiredFields.every(field => device.hasOwnProperty(field));
+            return requiredFields.every(field => Object.prototype.hasOwnProperty.call(device, field));
         });
     }
 

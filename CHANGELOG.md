@@ -1,5 +1,87 @@
 # 📝 CHANGELOG - Bonjour Network
 
+## [2.4.0] - 2025-01-27
+
+### 🌐 **Scan DNS & Services**
+
+#### **Nouvelle fonctionnalité de scan DNS**
+
+- ✨ **Résolution DNS intelligente** : Test de 100+ hôtes communs (router, nas, printer, etc.)
+- 🎯 **Messages d'erreur compréhensibles** : Explications en français clair au lieu de messages techniques
+- 📊 **Classification automatique** : Identification du type d'appareil (Routeur, NAS, Imprimante, TV, Console, IoT)
+- 🎨 **Organisation visuelle** : Hôtes résolus (vert) et échecs (rouge) séparés
+- 📈 **Statistiques détaillées** : Total, résolus, échecs, temps moyen de résolution
+- 🔄 **Scan manuel** : Contrôle total via bouton "Scanner DNS & Services" (pas d'automatique)
+
+#### **Types d'hôtes testés**
+
+```javascript
+// Appareils réseau
+'router', 'gateway', 'freebox', 'livebox', 'pi.hole'
+
+// Périphériques  
+'printer', 'camera', 'tv', 'apple-tv'
+
+// Consoles & médias
+'xbox', 'ps4', 'switch', 'chromecast', 'firestick'
+
+// IoT & Smart Home
+'homepod', 'echo', 'nest', 'hue', 'shelly'
+```
+
+#### **Messages d'erreur améliorés**
+
+**Avant :**
+
+```
+❌ "Erreur: Command failed: nslookup router"
+❌ "Timeout - Hôte non accessible"
+```
+
+**Maintenant :**
+
+```
+✅ "Routeur non configuré ou non disponible"
+✅ "Délai d'attente dépassé - Routeur non accessible"
+✅ "Console de jeu non trouvée sur ce réseau"
+✅ "Imprimante non disponible sur ce réseau"
+```
+
+#### **Interface utilisateur**
+
+- 🎨 **Navigation par onglets** : Appareils, Réseaux, DNS & Services
+- 📊 **Organisation claire** : Sections séparées pour succès et échecs
+- 🔍 **Détails contextuels** : Explication pour chaque hôte testé
+- ⏱️ **Performance** : Scan en 5-10 secondes, résultats immédiats
+- 👁️ **Toggle d'affichage** : Affichage propre par défaut, option pour voir tous les hôtes
+- 💡 **Interface focalisée** : Hôtes résolus uniquement, échecs masqués par défaut
+
+### 🔧 **Améliorations Techniques**
+
+#### **Backend DNS Scanner**
+
+- 🛠️ **Classe DnsScanner** : Gestion complète des scans DNS
+- ⚡ **Parallélisation** : Tous les hôtes testés simultanément
+- 🔍 **Classification intelligente** : `getHostType()` pour identifier le type d'appareil
+- 📝 **Messages d'erreur clairs** : `getComprehensiveErrorMessage()` en français
+- 🎯 **Timeout intelligent** : 5 secondes par hôte maximum
+
+#### **Frontend DNS Services**
+
+- 🎨 **Composant DnsServicesList** : Interface dédiée pour les scans DNS
+- 📊 **Organisation visuelle** : Sections vertes/rouges selon le statut
+- 🔄 **Scan manuel** : Bouton "Scanner DNS & Services"
+- 📈 **Statistiques en temps réel** : Métriques de performance DNS
+- 👁️ **Toggle d'affichage** : État `showFailedHosts` pour contrôler l'affichage
+- 💡 **Interface adaptative** : Affichage propre par défaut, diagnostic complet optionnel
+
+### 📚 **Documentation**
+
+- 📖 **[Guide DNS & Services](docs/DNS_SCANNING.md)** : Documentation complète du scan DNS
+- 🔍 **Exemples d'utilisation** : Via interface web et API
+- 🛠️ **Dépannage** : Guide de résolution des problèmes DNS
+- 📊 **Métriques** : Performance et optimisations
+
 ## [2.3.0] - 2025-01-27
 
 ### 📡 **Scan WiFi Avancé**

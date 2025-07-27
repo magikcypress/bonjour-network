@@ -4,62 +4,68 @@
 
 class EnvironmentValidator {
     // Variables d'environnement requises
-    static requiredVars = [
-        'NODE_ENV',
-        'PORT'
-    ];
+    static get requiredVars() {
+        return [
+            'NODE_ENV',
+            'PORT'
+        ];
+    }
 
     // Variables d'environnement optionnelles avec valeurs par défaut
-    static optionalVars = {
-        'MISTRAL_AI_URL': 'https://api.mistral.ai',
-        'JWT_SECRET': null, // Requis si authentification activée
-        'WIFI_SCAN_INTERVAL': '30000',
-        'DEVICE_SCAN_INTERVAL': '60000',
-        'LOG_LEVEL': 'info',
-        'REQUEST_TIMEOUT': '30000',
-        'SCAN_TIMEOUT': '10000',
-        'CORS_ORIGIN': 'http://localhost:3000,http://localhost:3001,http://localhost:5001,http://192.168.1.93:3000,http://192.168.1.93:3001'
-    };
+    static get optionalVars() {
+        return {
+            'MISTRAL_AI_URL': 'https://api.mistral.ai',
+            'JWT_SECRET': null, // Requis si authentification activée
+            'WIFI_SCAN_INTERVAL': '30000',
+            'DEVICE_SCAN_INTERVAL': '60000',
+            'LOG_LEVEL': 'info',
+            'REQUEST_TIMEOUT': '30000',
+            'SCAN_TIMEOUT': '10000',
+            'CORS_ORIGIN': 'http://localhost:3000,http://localhost:3001,http://localhost:5001,http://192.168.1.93:3000,http://192.168.1.93:3001'
+        };
+    }
 
     // Validation des types et formats
-    static validators = {
-        'NODE_ENV': (value) => ['development', 'production', 'test'].includes(value),
-        'PORT': (value) => {
-            const port = parseInt(value);
-            return port >= 1 && port <= 65535;
-        },
-        'MISTRAL_AI_URL': (value) => {
-            try {
-                new URL(value);
-                return true;
-            } catch {
-                return false;
-            }
-        },
+    static get validators() {
+        return {
+            'NODE_ENV': (value) => ['development', 'production', 'test'].includes(value),
+            'PORT': (value) => {
+                const port = parseInt(value);
+                return port >= 1 && port <= 65535;
+            },
+            'MISTRAL_AI_URL': (value) => {
+                try {
+                    new URL(value);
+                    return true;
+                } catch {
+                    return false;
+                }
+            },
 
-        'JWT_SECRET': (value) => {
-            return value && value.length >= 32;
-        },
-        'WIFI_SCAN_INTERVAL': (value) => {
-            const interval = parseInt(value);
-            return interval >= 1000 && interval <= 300000;
-        },
-        'DEVICE_SCAN_INTERVAL': (value) => {
-            const interval = parseInt(value);
-            return interval >= 1000 && interval <= 600000;
-        },
-        'LOG_LEVEL': (value) => {
-            return ['error', 'warn', 'info', 'debug'].includes(value);
-        },
-        'REQUEST_TIMEOUT': (value) => {
-            const timeout = parseInt(value);
-            return timeout >= 1000 && timeout <= 120000;
-        },
-        'SCAN_TIMEOUT': (value) => {
-            const timeout = parseInt(value);
-            return timeout >= 1000 && timeout <= 60000;
-        }
-    };
+            'JWT_SECRET': (value) => {
+                return value && value.length >= 32;
+            },
+            'WIFI_SCAN_INTERVAL': (value) => {
+                const interval = parseInt(value);
+                return interval >= 1000 && interval <= 300000;
+            },
+            'DEVICE_SCAN_INTERVAL': (value) => {
+                const interval = parseInt(value);
+                return interval >= 1000 && interval <= 600000;
+            },
+            'LOG_LEVEL': (value) => {
+                return ['error', 'warn', 'info', 'debug'].includes(value);
+            },
+            'REQUEST_TIMEOUT': (value) => {
+                const timeout = parseInt(value);
+                return timeout >= 1000 && timeout <= 120000;
+            },
+            'SCAN_TIMEOUT': (value) => {
+                const timeout = parseInt(value);
+                return timeout >= 1000 && timeout <= 60000;
+            }
+        };
+    }
 
     /**
      * Valide toutes les variables d'environnement
