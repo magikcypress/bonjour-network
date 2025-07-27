@@ -27,7 +27,7 @@ jobs:
           cat > .env << EOF
           PORT=5001
           NODE_ENV=development
-          JWT_SECRET=test_jwt_secret_for_ci
+          JWT_SECRET=test_jwt_secret_for_ci_very_long_32_chars_minimum
           LOG_LEVEL=info
           WIFI_SCAN_INTERVAL=30000
           DEVICE_SCAN_INTERVAL=60000
