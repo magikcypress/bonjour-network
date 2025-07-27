@@ -261,7 +261,12 @@ app.get('/api/devices', async (req, res) => {
     try {
         // Utiliser le scanner amélioré pour une meilleure cohérence
         const scanner = new ImprovedDeviceScanner(io);
-        const devices = await scanner.scanConnectedDevices('complete');
+        const rawDevices = await scanner.scanConnectedDevices('complete');
+
+        // Formater les données selon le format attendu par le frontend
+        const dataFormatter = new DataFormatter();
+        const devices = dataFormatter.formatDevices(rawDevices);
+
         res.json(devices);
     } catch (error) {
         console.error('Erreur lors du scan des appareils:', error);
@@ -345,6 +350,50 @@ app.get('/api/devices/count', async (req, res) => {
     }
 });
 
+// Endpoint de débogage pour voir les données exactes
+app.get('/api/devices/debug', async (req, res) => {
+    try {
+        console.log('🔍 Endpoint de débogage appelé');
+
+        // Récupérer les données réelles
+        const scanner = new ImprovedDeviceScanner(io);
+        const rawDevices = await scanner.scanConnectedDevices('fast');
+
+        console.log('📊 Données brutes:', rawDevices.length, 'appareils');
+
+        // Formater avec DataFormatter
+        const dataFormatter = new DataFormatter();
+        const formattedDevices = dataFormatter.formatDevices(rawDevices);
+
+        console.log('📋 Données formatées:', formattedDevices.length, 'appareils');
+
+        // Log détaillé du premier appareil
+        if (formattedDevices.length > 0) {
+            const first = formattedDevices[0];
+            console.log('📱 Premier appareil formaté:', {
+                ip: first.ip,
+                manufacturer: first.manufacturer,
+                deviceType: first.deviceType,
+                manufacturerInfo: first.manufacturerInfo
+            });
+        }
+
+        res.json({
+            rawCount: rawDevices.length,
+            formattedCount: formattedDevices.length,
+            devices: formattedDevices,
+            debug: {
+                timestamp: new Date().toISOString(),
+                endpoint: '/api/devices/debug'
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur endpoint debug:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Endpoint de test pour les appareils (données de test)
 app.get('/api/devices/test', (req, res) => {
     const testDevices = [
@@ -356,7 +405,12 @@ app.get('/api/devices/test', (req, res) => {
             lastSeen: new Date().toISOString(),
             isActive: true,
             manufacturer: 'TP-Link',
-            source: 'test'
+            manufacturerInfo: {
+                identified: true,
+                manufacturer: 'TP-Link',
+                confidence: 0.9,
+                source: 'test'
+            }
         },
         {
             ip: '192.168.1.2',
@@ -366,7 +420,12 @@ app.get('/api/devices/test', (req, res) => {
             lastSeen: new Date().toISOString(),
             isActive: true,
             manufacturer: 'Apple',
-            source: 'test'
+            manufacturerInfo: {
+                identified: true,
+                manufacturer: 'Apple',
+                confidence: 0.95,
+                source: 'test'
+            }
         },
         {
             ip: '192.168.1.3',
@@ -376,11 +435,21 @@ app.get('/api/devices/test', (req, res) => {
             lastSeen: new Date().toISOString(),
             isActive: true,
             manufacturer: 'Apple',
-            source: 'test'
+            manufacturerInfo: {
+                identified: true,
+                manufacturer: 'Apple',
+                confidence: 0.9,
+                source: 'test'
+            }
         }
     ];
 
-    res.json(testDevices);
+    // Utiliser le DataFormatter pour formater les données de test
+    const dataFormatter = new DataFormatter();
+    const formattedDevices = dataFormatter.formatDevices(testDevices);
+
+    console.log('🧪 Données de test formatées:', formattedDevices);
+    res.json(formattedDevices);
 });
 
 // Endpoint pour comparer les deux scanners

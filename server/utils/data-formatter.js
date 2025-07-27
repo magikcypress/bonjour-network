@@ -23,6 +23,9 @@ class DataFormatter {
      */
     formatDevice(device) {
         try {
+            // Fusion intelligente des données fabricant
+            const manufacturerInfo = this.mergeManufacturerData(device);
+
             // Validation et nettoyage des données de base
             const formattedDevice = {
                 ip: this.sanitizeIp(device.ip),
@@ -32,7 +35,8 @@ class DataFormatter {
                 lastSeen: this.sanitizeTimestamp(device.lastSeen),
                 isActive: Boolean(device.isActive),
                 isLocal: Boolean(device.isLocal),
-                manufacturerInfo: this.formatManufacturerInfo(device.manufacturerInfo),
+                manufacturer: manufacturerInfo.manufacturer,
+                manufacturerInfo: manufacturerInfo,
                 discoveredBy: this.sanitizeString(device.discoveredBy),
                 source: this.sanitizeString(device.source),
                 security: this.sanitizeSecurity(device.security)
@@ -49,6 +53,34 @@ class DataFormatter {
             logger.error('❌ Erreur lors du formatage d\'un appareil:', error);
             return null;
         }
+    }
+
+    /**
+     * Fusion intelligente des données fabricant
+     */
+    mergeManufacturerData(device) {
+        // Priorité 1: Données directes du scanner
+        if (device.manufacturer && device.manufacturer !== 'Unknown Manufacturer') {
+            return {
+                identified: true,
+                manufacturer: this.sanitizeString(device.manufacturer),
+                confidence: device.manufacturerConfidence || 0.8,
+                source: device.manufacturerSource || 'scanner'
+            };
+        }
+
+        // Priorité 2: Données manufacturerInfo existantes
+        if (device.manufacturerInfo && device.manufacturerInfo.identified) {
+            return this.formatManufacturerInfo(device.manufacturerInfo);
+        }
+
+        // Priorité 3: Valeurs par défaut
+        return {
+            identified: false,
+            manufacturer: 'Unknown',
+            confidence: 0,
+            source: 'unknown'
+        };
     }
 
     /**

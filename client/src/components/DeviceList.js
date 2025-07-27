@@ -73,6 +73,19 @@ function DeviceList({
                 console.warn('⚠️ Données d\'appareils invalides:', devices);
                 return [];
             }
+
+            // Log de débogage pour voir les appareils reçus
+            console.log('🔍 Appareils reçus dans DeviceList:', devices);
+            if (devices && devices.length > 0) {
+                console.log('📱 Premier appareil dans DeviceList:', {
+                    ip: devices[0].ip,
+                    manufacturer: devices[0].manufacturer,
+                    deviceType: devices[0].deviceType,
+                    manufacturerInfo: devices[0].manufacturerInfo
+                });
+                console.log('🔍 Structure complète du premier appareil:', JSON.stringify(devices[0], null, 2));
+            }
+
             return validateDevices(devices);
         } catch (error) {
             console.error('❌ Erreur de validation des appareils:', error);
@@ -501,6 +514,8 @@ function DeviceList({
                     )}
                 </div>
             )}
+
+
         </div>
     );
 }

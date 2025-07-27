@@ -161,6 +161,7 @@ export function sanitizeDevice(device) {
             lastSeen: validateTimestamp(device.lastSeen) ? device.lastSeen : new Date().toISOString(),
             isActive: Boolean(device.isActive),
             isLocal: Boolean(device.isLocal),
+            manufacturer: validateString(device.manufacturer, 50) ? device.manufacturer.trim() : null,
             manufacturerInfo: sanitizeManufacturerInfo(device.manufacturerInfo),
             discoveredBy: validateString(device.discoveredBy, 20) ? device.discoveredBy.trim() : 'scan',
             source: validateString(device.source, 20) ? device.source.trim() : 'network',

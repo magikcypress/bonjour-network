@@ -78,13 +78,18 @@ class ImprovedDeviceScanner {
             const scanPromise = this.performImprovedScan(scanMode);
             const result = await Promise.race([scanPromise, timeoutPromise]);
 
+            // Formater les données avec DataFormatter avant d'envoyer via WebSocket
+            const DataFormatter = require('./utils/data-formatter');
+            const dataFormatter = new DataFormatter();
+            const formattedDevices = dataFormatter.formatDevices(result);
+
             this.emitProgress('scan', 'complete', `Scan ${scanMode} terminé avec succès`, {
-                deviceCount: result.length,
+                deviceCount: formattedDevices.length,
                 connectionType: connectionInfo.connectionType
             });
 
             if (this.io) {
-                this.io.emit('scan-complete', { devices: result });
+                this.io.emit('scan-complete', { devices: formattedDevices });
             }
 
             return result;
@@ -606,6 +611,17 @@ class ImprovedDeviceScanner {
                 ip.startsWith('224.') || // Multicast
                 ip.startsWith('255.') || // Broadcast
                 ip.startsWith('0.')) { // Réservé
+                return false;
+            }
+
+            // Filtrage des adresses MAC de broadcast
+            if (device.mac && (
+                device.mac === 'ff:ff:ff:ff:ff:ff' || // Broadcast
+                device.mac === '00:00:00:00:00:00' || // Null
+                device.mac.includes('ff:ff:ff') || // Broadcast patterns
+                device.mac.includes('00:00:00') // Null patterns
+            )) {
+                console.log(`🚫 Filtrage adresse MAC de broadcast/null: ${device.ip} - ${device.mac}`);
                 return false;
             }
 

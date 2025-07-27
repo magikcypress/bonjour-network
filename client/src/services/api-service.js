@@ -249,19 +249,47 @@ class ApiService {
             return [];
         }
 
-        return devices.map(device => ({
-            ip: this.sanitizeIp(device.ip),
-            mac: this.sanitizeMac(device.mac),
-            hostname: this.sanitizeString(device.hostname),
-            deviceType: this.sanitizeDeviceType(device.deviceType),
-            lastSeen: this.sanitizeTimestamp(device.lastSeen),
-            isActive: Boolean(device.isActive),
-            isLocal: Boolean(device.isLocal),
-            manufacturerInfo: this.validateManufacturerInfo(device.manufacturerInfo),
-            discoveredBy: this.sanitizeString(device.discoveredBy),
-            source: this.sanitizeString(device.source),
-            security: this.sanitizeString(device.security)
-        })).filter(device => device.ip && device.mac);
+        console.log('🔍 validateDevices - Données reçues:', devices.length, 'appareils');
+        if (devices.length > 0) {
+            console.log('📱 Premier appareil brut:', {
+                ip: devices[0].ip,
+                manufacturer: devices[0].manufacturer,
+                deviceType: devices[0].deviceType
+            });
+        }
+
+        const validatedDevices = devices.map(device => {
+            const validatedDevice = {
+                ip: this.sanitizeIp(device.ip),
+                mac: this.sanitizeMac(device.mac),
+                hostname: this.sanitizeString(device.hostname),
+                deviceType: this.sanitizeDeviceType(device.deviceType),
+                lastSeen: this.sanitizeTimestamp(device.lastSeen),
+                isActive: Boolean(device.isActive),
+                isLocal: Boolean(device.isLocal),
+                manufacturer: this.sanitizeString(device.manufacturer),
+                manufacturerInfo: this.validateManufacturerInfo(device.manufacturerInfo),
+                discoveredBy: this.sanitizeString(device.discoveredBy),
+                source: this.sanitizeString(device.source),
+                security: this.sanitizeString(device.security)
+            };
+
+            // Log de débogage pour le premier appareil
+            if (devices.indexOf(device) === 0) {
+                console.log('📱 Premier appareil validé:', {
+                    ip: validatedDevice.ip,
+                    manufacturer: validatedDevice.manufacturer,
+                    deviceType: validatedDevice.deviceType,
+                    manufacturerOriginal: device.manufacturer,
+                    manufacturerSanitized: this.sanitizeString(device.manufacturer)
+                });
+            }
+
+            return validatedDevice;
+        }).filter(device => device.ip && device.mac);
+
+        console.log('✅ validateDevices - Appareils validés:', validatedDevices.length, 'appareils');
+        return validatedDevices;
     }
 
     // Méthodes de sanitisation
@@ -279,7 +307,8 @@ class ApiService {
 
     sanitizeString(str) {
         if (!str || typeof str !== 'string') return null;
-        return str.trim().substring(0, 100) || null;
+        const trimmed = str.trim();
+        return trimmed.length > 0 ? trimmed.substring(0, 100) : null;
     }
 
     sanitizeNumber(num, min, max) {

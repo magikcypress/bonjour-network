@@ -64,6 +64,18 @@ export const useDataManager = (activeTab = 'networks') => {
         try {
             setLoading(prev => ({ ...prev, devices: true }));
             const response = await apiService.getDevices();
+
+            // Log de débogage pour voir les données reçues
+            console.log('🔍 Données appareils reçues:', response);
+            if (response && response.length > 0) {
+                console.log('📱 Premier appareil:', {
+                    ip: response[0].ip,
+                    manufacturer: response[0].manufacturer,
+                    deviceType: response[0].deviceType,
+                    manufacturerInfo: response[0].manufacturerInfo
+                });
+            }
+
             setData(prevData => ({
                 ...prevData,
                 devices: response || [],
@@ -102,6 +114,14 @@ export const useDataManager = (activeTab = 'networks') => {
                     networks: networksResponse,
                     devices: devicesResponse
                 });
+
+                // Log détaillé des appareils
+                if (devicesResponse && devicesResponse.length > 0) {
+                    console.log('📱 Appareils reçus dans useDataManager:');
+                    devicesResponse.forEach((device, index) => {
+                        console.log(`  ${index + 1}. ${device.ip}: manufacturer="${device.manufacturer}", deviceType="${device.deviceType}"`);
+                    });
+                }
 
                 setData({
                     networks: networksResponse || [],
@@ -223,11 +243,12 @@ export const useDataManager = (activeTab = 'networks') => {
                             networks: newData.networks?.length || 0
                         });
 
-                        // Log des fabricants pour debug
+                        // Log détaillé des appareils pour debug
                         if (newData.devices && newData.devices.length > 0) {
                             console.log('📱 Appareils avec fabricants:');
                             newData.devices.forEach((device, index) => {
                                 console.log(`  ${index + 1}. ${device.ip}: ${device.manufacturer || 'N/A'} (${device.deviceType || 'N/A'})`);
+                                console.log(`     Structure complète:`, JSON.stringify(device, null, 2));
                             });
                         }
 

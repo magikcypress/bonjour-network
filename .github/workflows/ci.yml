@@ -21,6 +21,8 @@ jobs:
         run: cd client && npm install
       - name: Install dependencies (server)
         run: cd server && npm install
+      - name: Install wait-on globally
+        run: npm install -g wait-on
       - name: Install Puppeteer dependencies
         run: |
           sudo apt-get update
@@ -52,8 +54,8 @@ jobs:
           sleep 5
       - name: Wait for services to be ready
         run: |
-          npx wait-on http://localhost:3000
-          npx wait-on http://localhost:5001
+          wait-on http://localhost:3000
+          wait-on http://localhost:5001
           sleep 10
       - name: Test Puppeteer configuration
         run: node scripts/test-puppeteer-config.js
