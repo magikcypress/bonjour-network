@@ -30,6 +30,13 @@ Le module **DNS & Services** permet d'analyser la résolution DNS de votre rése
 - **Services Bonjour** : mDNS et services locaux
 - **Historique DNS** : Cache et résolutions récentes
 
+### **Interface Adaptative**
+
+- **Mode sombre/clair** : Adaptation automatique avec persistance
+- **Design cohérent** : Tous les éléments adaptés au thème
+- **Transitions fluides** : Changement de thème sans rechargement
+- **Métriques persistantes** : Statistiques sauvegardées automatiquement
+
 ## 🎯 Types d'Hôtes Testés
 
 ### **Appareils Réseau**
@@ -91,13 +98,14 @@ Le module **DNS & Services** permet d'analyser la résolution DNS de votre rése
 
 1. Ouvrir l'application Bonjour Network
 2. Cliquer sur l'onglet **"DNS & Services"**
-3. Le scan se lance automatiquement à l'ouverture
+3. **Note** : Le scan ne se lance plus automatiquement (contrôle manuel uniquement)
 
 ### **Lancement Manuel**
 
 1. Cliquer sur **"Scanner DNS & Services"**
 2. Attendre 5-10 secondes pour le scan complet
 3. Consulter les résultats organisés par statut
+4. Utiliser le toggle pour afficher/masquer les hôtes en échec
 
 ### **Interface Utilisateur**
 

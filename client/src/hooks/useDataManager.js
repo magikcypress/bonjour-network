@@ -12,7 +12,8 @@ export const useDataManager = (activeTab = 'networks') => {
         portsData: {},
         historyData: {},
         networkCount: 0,
-        deviceCount: 0
+        deviceCount: 0,
+        dnsCount: 0
     });
     const [loading, setLoading] = useState({
         networks: false,
@@ -103,11 +104,18 @@ export const useDataManager = (activeTab = 'networks') => {
 
             console.log('🔍 Données DNS & Services reçues:', response);
 
+            // Calculer le nombre d'hôtes DNS
+            const dnsHosts = response.dnsData?.hosts || [];
+            const dnsCount = dnsHosts.length;
+
+            console.log('📊 Nombre d\'hôtes DNS calculé:', dnsCount);
+
             setData(prevData => ({
                 ...prevData,
                 dnsData: response.dnsData || {},
                 servicesData: response.servicesData || {},
-                historyData: response.historyData || {}
+                historyData: response.historyData || {},
+                dnsCount: dnsCount
             }));
         } catch (error) {
             const errorMessage = error.message || 'Erreur lors du chargement DNS & Services';
@@ -135,13 +143,41 @@ export const useDataManager = (activeTab = 'networks') => {
                 // Charger seulement les données de base (pas de scan automatique)
                 console.log('📊 Chargement des données de base (sans scan automatique)...');
 
-                // Initialiser avec des données vides
-                setData({
-                    networks: [],
-                    devices: [],
-                    networkCount: 0,
-                    deviceCount: 0
-                });
+                // Charger les métriques depuis localStorage pour l'affichage initial
+                try {
+                    const savedMetrics = localStorage.getItem('bonjour-network-metrics');
+                    if (savedMetrics) {
+                        const parsedMetrics = JSON.parse(savedMetrics);
+                        console.log('📊 Métriques chargées depuis localStorage:', parsedMetrics);
+
+                        // Initialiser avec les métriques sauvegardées
+                        setData({
+                            networks: [],
+                            devices: [],
+                            networkCount: parsedMetrics.networkCount || 0,
+                            deviceCount: parsedMetrics.deviceCount || 0,
+                            dnsCount: parsedMetrics.dnsCount || 0
+                        });
+                    } else {
+                        // Initialiser avec des données vides si pas de métriques sauvegardées
+                        setData({
+                            networks: [],
+                            devices: [],
+                            networkCount: 0,
+                            deviceCount: 0,
+                            dnsCount: 0
+                        });
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Erreur lors du chargement des métriques:', error);
+                    setData({
+                        networks: [],
+                        devices: [],
+                        networkCount: 0,
+                        deviceCount: 0,
+                        dnsCount: 0
+                    });
+                }
 
                 console.log('✅ Application initialisée - Scans disponibles via boutons');
 

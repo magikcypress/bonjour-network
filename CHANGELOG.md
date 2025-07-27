@@ -1,5 +1,83 @@
 # 📝 CHANGELOG - Bonjour Network
 
+## [2.5.0] - 2025-01-27
+
+### 🌙 **Mode Sombre/Clair**
+
+#### **Nouvelle interface adaptative**
+
+- ✨ **Mode sombre complet** : Tous les composants adaptés (cartes, textes, icônes, boutons)
+- 🔄 **Basculement persistant** : Préférence sauvegardée en localStorage
+- 🎨 **Design cohérent** : Classes Tailwind `dark:` sur tous les éléments
+- ⚡ **Transitions fluides** : Changement de thème sans rechargement
+- 🌙 **Bouton toggle** : Icône soleil/lune dans la navigation principale
+
+#### **Composants adaptés**
+
+- 📱 **DeviceList** : Cartes d'appareils, étapes de scan, messages d'erreur
+- 🌐 **NetworkList** : Cartes de réseaux, indicateurs de connectivité, réseaux invalides
+- 🔍 **DnsServicesList** : Hôtes résolus/échecs, services, historique DNS
+- 📊 **NetworkStats** : Cartes de statistiques, sections détaillées
+- 🧭 **TabNavigation** : Navigation, titre, métriques, bouton thème
+
+#### **Configuration Tailwind**
+
+```javascript
+// tailwind.config.js
+module.exports = {
+  darkMode: 'class', // Activation du mode sombre basé sur les classes
+  // ...
+}
+```
+
+### 📊 **Métriques Persistantes**
+
+#### **Sauvegarde automatique des statistiques**
+
+- 💾 **localStorage** : Sauvegarde des compteurs (réseaux, appareils, DNS)
+- 🔄 **Récupération automatique** : Métriques restaurées au démarrage
+- 📈 **Timestamp** : Horodatage de la dernière mise à jour
+- 🎯 **Interface unifiée** : Affichage en haut de page avec navigation
+
+#### **Hook useMetricsStorage**
+
+```javascript
+// Gestion des métriques persistantes
+const { metrics, updateMetrics } = useMetricsStorage();
+// Sauvegarde automatique en localStorage
+```
+
+### 🎨 **Interface Améliorée**
+
+#### **Navigation simplifiée**
+
+- 🗑️ **Suppression du menu redondant** : Navigation component supprimé
+- 🏷️ **Titre intégré** : "Bonjour Network" dans TabNavigation
+- 📊 **Métriques en temps réel** : Mise à jour automatique des compteurs
+- 🎨 **Design responsive** : Adaptation mobile/desktop
+
+#### **Composants optimisés**
+
+- 🧭 **TabNavigation** : Intégration du titre, métriques et bouton thème
+- 🌙 **ThemeContext** : Gestion centralisée du thème
+- 📱 **Responsive design** : Adaptation mobile/desktop
+- ⚡ **Performance** : Optimisation des re-renders
+
+### 🔧 **Améliorations Techniques**
+
+#### **Frontend**
+
+- 🎨 **ThemeContext** : Provider pour la gestion du thème
+- 💾 **useMetricsStorage** : Hook pour la persistance des métriques
+- 🎯 **Tailwind config** : Configuration du mode sombre
+- 📱 **Responsive** : Adaptation mobile/desktop
+
+#### **Configuration**
+
+- ⚙️ **Tailwind** : `darkMode: 'class'` activé
+- 🎨 **CSS transitions** : Transitions fluides pour les changements de thème
+- 💾 **localStorage** : Persistance des préférences utilisateur
+
 ## [2.4.0] - 2025-01-27
 
 ### 🌐 **Scan DNS & Services**

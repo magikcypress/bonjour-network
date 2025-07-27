@@ -319,7 +319,7 @@ function DeviceList({
     return (
         <div className="space-y-6">
             {/* Contrôles de scan */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-4">
                         <button
@@ -348,14 +348,14 @@ function DeviceList({
                             </button>
                         )}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
                         {validatedDevices.length} appareils détectés
                     </div>
                 </div>
 
                 {/* Sélecteur de mode */}
                 <div className="flex items-center space-x-4">
-                    <span className="text-sm font-medium text-gray-700">Mode de scan:</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mode de scan:</span>
                     <div className="flex space-x-2">
                         <button
                             onClick={() => handleScanModeChange('fast')}
@@ -393,13 +393,13 @@ function DeviceList({
 
             {/* Progression du scan */}
             {scanProgress?.isActive && (
-                <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold text-gray-800">
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                                 Progression du scan
                             </h3>
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-gray-600 dark:text-gray-300">
                                 {formatElapsedTime(elapsedTime)}
                             </span>
                         </div>
@@ -421,17 +421,17 @@ function DeviceList({
                             return (
                                 <div
                                     key={step.id}
-                                    className={`flex items-center p-3 rounded-lg ${isCurrent ? 'bg-blue-50 border border-blue-200' : ''
+                                    className={`flex items-center p-3 rounded-lg ${isCurrent ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700' : ''
                                         }`}
                                 >
                                     <div className="mr-3">
                                         {getStepIcon(step.id, isCompleted, isCurrent)}
                                     </div>
                                     <div className="flex-1">
-                                        <div className="font-medium text-gray-800">
+                                        <div className="font-medium text-gray-800 dark:text-white">
                                             {step.name}
                                         </div>
-                                        <div className="text-sm text-gray-600">
+                                        <div className="text-sm text-gray-600 dark:text-gray-300">
                                             {step.description}
                                         </div>
                                     </div>
@@ -442,10 +442,10 @@ function DeviceList({
 
                     {/* Message de progression */}
                     {scanProgress.message && (
-                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
                             <div className="flex items-center">
                                 <Loader className="w-4 h-4 animate-spin text-blue-600 mr-2" />
-                                <span className="text-sm text-blue-800">{scanProgress.message}</span>
+                                <span className="text-sm text-blue-800 dark:text-blue-200">{scanProgress.message}</span>
                             </div>
                         </div>
                     )}
@@ -454,7 +454,7 @@ function DeviceList({
 
             {/* Message d'erreur */}
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+                <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg">
                     <div className="flex items-center">
                         <AlertCircle className="w-4 h-4 mr-2" />
                         <span className="text-sm font-medium">Erreur:</span>
@@ -468,7 +468,7 @@ function DeviceList({
                 {validatedDevices.map((device, index) => (
                     <div
                         key={`${device.ip}-${device.mac}-${index}`}
-                        className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-200"
+                        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-200"
                     >
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -477,10 +477,10 @@ function DeviceList({
                                         {getDeviceIcon(device.deviceType)}
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-semibold text-gray-800">
+                                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                                             {getDisplayName(device)}
                                         </h3>
-                                        <p className="text-sm text-gray-600">
+                                        <p className="text-sm text-gray-600 dark:text-gray-300">
                                             {device.manufacturer && device.manufacturer !== 'Unknown'
                                                 ? device.manufacturer
                                                 : 'Fabricant inconnu'}
@@ -488,14 +488,14 @@ function DeviceList({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-300">
                                     <div className="flex items-center">
                                         <MapPin className="w-4 h-4 mr-2" />
                                         <span className="font-medium">IP:</span>
                                         <span className="ml-2 font-mono">{device.ip}</span>
                                         <button
                                             onClick={() => copyToClipboard(device.ip)}
-                                            className="ml-2 p-1 hover:bg-gray-100 rounded"
+                                            className="ml-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                                         >
                                             {copiedText === device.ip ? (
                                                 <Check className="w-3 h-3 text-green-600" />
@@ -510,7 +510,7 @@ function DeviceList({
                                         <span className="ml-2 font-mono">{device.mac}</span>
                                         <button
                                             onClick={() => copyToClipboard(device.mac)}
-                                            className="ml-2 p-1 hover:bg-gray-100 rounded"
+                                            className="ml-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                                         >
                                             {copiedText === device.mac ? (
                                                 <Check className="w-3 h-3 text-green-600" />
@@ -536,12 +536,12 @@ function DeviceList({
 
                                 {/* Informations supplémentaires */}
                                 {device.os && (
-                                    <div className="mt-3 text-xs text-gray-500">
+                                    <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
                                         <span className="font-medium">OS:</span> {device.os}
                                     </div>
                                 )}
                                 {device.discoveredBy && (
-                                    <div className="mt-1 text-xs text-gray-500">
+                                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         <span className="font-medium">Découvert par:</span> {device.discoveredBy}
                                     </div>
                                 )}
@@ -555,7 +555,7 @@ function DeviceList({
             {loading && (
                 <div className="text-center py-8">
                     <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-gray-600">Chargement des appareils...</p>
+                    <p className="text-gray-600 dark:text-gray-300">Chargement des appareils...</p>
                 </div>
             )}
 

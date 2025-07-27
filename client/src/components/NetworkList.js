@@ -82,7 +82,7 @@ function NetworkList({
     return (
         <div className="space-y-6">
             {/* Contrôles */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <button
@@ -95,14 +95,14 @@ function NetworkList({
                         </button>
                     </div>
 
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
                         {networks.length} réseaux détectés ({validatedNetworks.length} validés)
                     </div>
                 </div>
 
                 {/* Indicateur de connectivité */}
                 {!connectivity.api && (
-                    <div className="mt-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
+                    <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300 rounded-lg">
                         <div className="flex items-center">
                             <AlertCircle className="w-4 h-4 mr-2" />
                             <span className="text-sm">
@@ -115,7 +115,7 @@ function NetworkList({
 
             {/* Message d'erreur */}
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+                <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg">
                     <div className="flex items-center">
                         <AlertCircle className="w-4 h-4 mr-2" />
                         <span className="text-sm font-medium">Erreur:</span>
@@ -132,18 +132,18 @@ function NetworkList({
                 {validatedNetworks.map((network, index) => (
                     <div
                         key={`${network.ssid}-${network.bssid}-${index}`}
-                        className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-200"
+                        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-200"
                     >
                         <div className="flex items-center justify-between">
                             <div className="flex-1">
                                 <div className="flex items-center mb-2">
-                                    <Wifi className="w-5 h-5 text-gray-600 mr-2" />
-                                    <h3 className="text-xl font-semibold text-gray-800">
+                                    <Wifi className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-2" />
+                                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
                                         {formatSSID(network.ssid)}
                                     </h3>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-300">
                                     <div className="flex items-center">
                                         <Signal className="w-4 h-4 mr-2" />
                                         <span className={getSignalStrengthColor(network.signalStrength)}>
@@ -160,7 +160,7 @@ function NetworkList({
 
                                 {/* Informations supplémentaires */}
                                 {network.bssid && (
-                                    <div className="mt-2 text-xs text-gray-500">
+                                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                         <span className="font-medium">BSSID:</span> {network.bssid}
                                     </div>
                                 )}
@@ -175,7 +175,7 @@ function NetworkList({
                 <div className="mt-8">
                     <div className="flex items-center mb-4">
                         <AlertTriangle className="w-5 h-5 text-orange-500 mr-2" />
-                        <h2 className="text-lg font-semibold text-gray-800">
+                        <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
                             Réseaux détectés mais non validés ({invalidNetworks.length})
                         </h2>
                     </div>
@@ -184,18 +184,18 @@ function NetworkList({
                         {invalidNetworks.map((network, index) => (
                             <div
                                 key={`invalid-${network.ssid}-${network.bssid}-${index}`}
-                                className="bg-orange-50 border border-orange-200 rounded-lg p-4 border-l-4 border-orange-400"
+                                className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4 border-l-4 border-orange-400 dark:border-orange-500"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1">
                                         <div className="flex items-center mb-2">
                                             <AlertTriangle className="w-4 h-4 text-orange-500 mr-2" />
-                                            <h3 className="text-lg font-medium text-gray-800">
+                                            <h3 className="text-lg font-medium text-gray-800 dark:text-white">
                                                 {formatSSID(network.ssid || 'Réseau inconnu')}
                                             </h3>
                                         </div>
 
-                                        <div className="text-sm text-gray-600">
+                                        <div className="text-sm text-gray-600 dark:text-gray-300">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                 <div>
                                                     <span className="font-medium">BSSID:</span> {network.bssid || 'N/A'}

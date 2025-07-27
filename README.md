@@ -39,12 +39,14 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 ### 📊 **Interface Moderne**
 
 - **Design responsive** : Compatible mobile, tablette, desktop
+- **Mode sombre/clair** : Interface adaptative avec thème persistant
 - **Temps réel** : Mises à jour en direct via WebSocket
 - **Progression visuelle** : Suivi en temps réel des scans
 - **Filtres avancés** : Recherche et tri des appareils
 - **Affichage intelligent** : Noms d'appareils, fabricants, types
 - **Navigation par onglets** : Appareils, Réseaux, DNS & Services
 - **Scans manuels** : Contrôle total des scans (pas d'automatique)
+- **Métriques persistantes** : Sauvegarde des statistiques en localStorage
 
 ### 🔒 **Sécurité Renforcée**
 
@@ -79,10 +81,12 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 ### **Frontend**
 
 - **React** + **Hooks** : Interface moderne
-- **Tailwind CSS** : Design responsive
+- **Tailwind CSS** : Design responsive avec mode sombre
 - **Socket.IO Client** : Connexion temps réel
 - **React Icons** : Icônes cohérentes
 - **Affichage intelligent** : Noms d'appareils prioritaires
+- **ThemeContext** : Gestion du mode sombre/clair
+- **localStorage** : Persistance des préférences et métriques
 
 ### **Détection Réseau**
 
@@ -195,6 +199,7 @@ curl -fsSL https://raw.githubusercontent.com/magikcypress/bonjour-network/main/s
 - **[API Endpoints](docs/API_ENDPOINTS_IMPROVED.md)** : Documentation API complète
 - **[Scan WiFi](docs/WIFI_SCANNING.md)** : Guide complet du scan WiFi
 - **[Scan DNS & Services](docs/DNS_SCANNING.md)** : Guide complet du scan DNS
+- **[Mode Sombre](docs/DARK_MODE.md)** : Guide complet du mode sombre/clair
 
 ## 🔧 Configuration
 
@@ -266,6 +271,8 @@ npm start
 - **Historique** : Logs détaillés
 - **Alertes** : Notifications d'événements
 - **Noms intelligents** : Affichage des noms d'appareils
+- **Mode sombre** : Basculement via le bouton soleil/lune
+- **Métriques persistantes** : Statistiques sauvegardées automatiquement
 
 ## 🔍 API Endpoints
 
@@ -391,6 +398,44 @@ npm run test:security
 # Vérifier les logs
 tail -f logs/security.log
 ```
+
+## 🌙 Nouvelles Fonctionnalités
+
+### **Mode Sombre/Clair**
+
+L'application propose maintenant un **mode sombre adaptatif** :
+
+- **Basculement automatique** : Bouton soleil/lune dans la navigation
+- **Persistance** : Préférence sauvegardée en localStorage
+- **Design cohérent** : Tous les composants adaptés (cartes, textes, icônes)
+- **Transitions fluides** : Changement de thème sans rechargement
+
+### **Métriques Persistantes**
+
+Les **statistiques globales** sont maintenant sauvegardées :
+
+- **Compteurs persistants** : Réseaux, appareils, DNS
+- **Sauvegarde automatique** : localStorage avec timestamp
+- **Récupération au démarrage** : Métriques restaurées automatiquement
+- **Interface unifiée** : Affichage en haut de page
+
+### **Interface Améliorée**
+
+- **Navigation simplifiée** : Suppression du menu redondant
+- **Titre intégré** : "Bonjour Network" dans la navigation
+- **Métriques en temps réel** : Mise à jour automatique des compteurs
+- **Design responsive** : Adaptation mobile/desktop
+
+### **Scan DNS & Services**
+
+Nouvelle fonctionnalité complète de **scan DNS intelligent** :
+
+- **Résolution DNS** : Test de 100+ hôtes communs
+- **Classification intelligente** : Identification du type d'appareil
+- **Messages d'erreur clairs** : Explications en français
+- **Interface focalisée** : Affichage des hôtes résolus par défaut
+- **Toggle d'affichage** : Option pour voir tous les hôtes
+- **Services réseau** : Détection HTTP, SSH, Bonjour/mDNS
 
 ## 🧪 Tests
 

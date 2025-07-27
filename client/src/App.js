@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDataManager } from './hooks/useDataManager';
-import Navigation from './components/Navigation';
+import { useMetricsStorage } from './hooks/useMetricsStorage';
+import { ThemeProvider } from './contexts/ThemeContext';
 import TabNavigation from './components/TabNavigation';
 import NetworkList from './components/NetworkList';
 import DeviceList from './components/DeviceList';
@@ -30,6 +31,38 @@ function App() {
         startRealTimeScan,
         stopRealTimeScan
     } = useDataManager(activeTab);
+
+    // Utiliser le hook de gestion des métriques
+    const { metrics, updateMetrics } = useMetricsStorage();
+
+    // Mettre à jour les métriques quand les données changent
+    useEffect(() => {
+        const newMetrics = {
+            networkCount: data.networkCount || 0,
+            deviceCount: data.deviceCount || 0,
+            dnsCount: data.dnsCount || 0
+        };
+
+        console.log('📊 Mise à jour des métriques:', {
+            newMetrics,
+            currentMetrics: metrics,
+            data: {
+                networkCount: data.networkCount,
+                deviceCount: data.deviceCount,
+                dnsCount: data.dnsCount
+            }
+        });
+
+        // Mettre à jour seulement si les valeurs ont changé
+        if (
+            newMetrics.networkCount !== metrics.networkCount ||
+            newMetrics.deviceCount !== metrics.deviceCount ||
+            newMetrics.dnsCount !== metrics.dnsCount
+        ) {
+            console.log('🔄 Mise à jour des métriques dans localStorage');
+            updateMetrics(newMetrics);
+        }
+    }, [data.networkCount, data.deviceCount, data.dnsCount, metrics, updateMetrics]);
 
     // Gestionnaire de changement d'onglet
     const handleTabChange = (tabId) => {
@@ -90,79 +123,78 @@ function App() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
-            <div className="flex-1">
-                <div className="container mx-auto px-4 py-8">
-                    {/* Indicateur de connectivité */}
-                    {!dataManagerConnectivity.api && (
-                        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                            <div className="flex items-center">
-                                <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                                <span className="text-sm font-medium">
-                                    Serveur backend non accessible
-                                </span>
+        <ThemeProvider>
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col">
+                <div className="flex-1">
+                    <div className="container mx-auto px-4 py-8">
+                        {/* Indicateur de connectivité */}
+                        {!dataManagerConnectivity.api && (
+                            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                                <div className="flex items-center">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                                    <span className="text-sm font-medium">
+                                        Serveur backend non accessible
+                                    </span>
+                                </div>
                             </div>
+                        )}
+
+                        {/* Navigation par onglets avec titre et métriques */}
+                        <TabNavigation
+                            activeTab={activeTab}
+                            onTabChange={handleTabChange}
+                            networkCount={metrics.networkCount}
+                            deviceCount={metrics.deviceCount}
+                            dnsCount={metrics.dnsCount}
+                            lastUpdated={metrics.lastUpdated}
+                        />
+
+
+
+                        {/* Contenu des onglets */}
+                        <div className="space-y-6">
+                            {activeTab === 'networks' && (
+                                <NetworkList
+                                    networks={data.networks}
+                                    loading={loading.networks}
+                                    error={error.networks}
+                                    onRefresh={loadNetworks}
+                                    startScan={handleStartScan}
+                                    connectivity={dataManagerConnectivity}
+                                    realTimeScan={realTimeScan}
+                                    onStartRealTimeScan={startRealTimeScan}
+                                    onStopRealTimeScan={stopRealTimeScan}
+                                />
+                            )}
+                            {activeTab === 'devices' && (
+                                <DeviceList
+                                    devices={data.devices}
+                                    loading={loading.devices}
+                                    error={error.devices}
+                                    scanProgress={scanProgress}
+                                    onScanComplete={handleScanComplete}
+                                    onStartScan={handleStartScan}
+                                    onCancelScan={handleCancelScan}
+                                    connectivity={dataManagerConnectivity}
+                                />
+                            )}
+                            {activeTab === 'dns' && (
+                                <DnsServicesList
+                                    dnsData={data.dnsData || {}}
+                                    servicesData={data.servicesData || {}}
+                                    historyData={data.historyData || {}}
+                                    loading={loading.dns}
+                                    error={error.dns}
+                                    onRefresh={loadDnsServices}
+                                    onStartScan={loadDnsServices}
+                                />
+                            )}
                         </div>
-                    )}
-
-                    {/* En-tête avec titre et statistiques */}
-                    <Navigation
-                        activeTab={activeTab}
-                        onTabChange={handleTabChange}
-                        networkCount={data.networkCount}
-                        deviceCount={data.deviceCount}
-                        connectivity={dataManagerConnectivity}
-                    />
-
-                    {/* Navigation par onglets */}
-                    <TabNavigation
-                        activeTab={activeTab}
-                        onTabChange={handleTabChange}
-                    />
-
-                    {/* Contenu des onglets */}
-                    <div className="space-y-6">
-                        {activeTab === 'networks' && (
-                            <NetworkList
-                                networks={data.networks}
-                                loading={loading.networks}
-                                error={error.networks}
-                                onRefresh={loadNetworks}
-                                startScan={handleStartScan}
-                                connectivity={dataManagerConnectivity}
-                                realTimeScan={realTimeScan}
-                                onStartRealTimeScan={startRealTimeScan}
-                                onStopRealTimeScan={stopRealTimeScan}
-                            />
-                        )}
-                        {activeTab === 'devices' && (
-                            <DeviceList
-                                devices={data.devices}
-                                loading={loading.devices}
-                                error={error.devices}
-                                scanProgress={scanProgress}
-                                onScanComplete={handleScanComplete}
-                                onStartScan={handleStartScan}
-                                onCancelScan={handleCancelScan}
-                                connectivity={dataManagerConnectivity}
-                            />
-                        )}
-                        {activeTab === 'dns' && (
-                            <DnsServicesList
-                                dnsData={data.dnsData || {}}
-                                servicesData={data.servicesData || {}}
-                                historyData={data.historyData || {}}
-                                loading={loading.dns}
-                                error={error.dns}
-                                onRefresh={loadDnsServices}
-                                onStartScan={loadDnsServices}
-                            />
-                        )}
                     </div>
                 </div>
+                <Footer />
             </div>
-            <Footer />
-        </div>
+        </ThemeProvider>
     );
 }
 
