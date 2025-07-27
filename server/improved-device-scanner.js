@@ -634,7 +634,8 @@ class ImprovedDeviceScanner {
         try {
             // Timeout plus court pour le scan rapide (300ms au lieu de 500ms)
             const result = await CommandValidator.safeExec(`ping -c 1 -W 300 ${ip}`);
-            if (result.success) {
+            // ping retourne false même quand il fonctionne (pas de réponse), donc on vérifie stdout
+            if (result.stdout && result.stdout.includes('PING')) {
                 // Obtenir la MAC via ARP avec timeout court
                 try {
                     const arpResult = await CommandValidator.safeExec(`arp -n ${ip}`);

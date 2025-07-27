@@ -33,7 +33,7 @@ class CommandValidator {
         'netstat': ['-rn', '-an'],
         'ifconfig': ['en0', 'en1', 'lo0', 'wlan0', 'eth0'],
         'ping': ['-c', '1', '-W', '1000', '500', '300'],
-        'nmap': ['-sn', '--max-retries', '1', '--min-rate', '100', '200', '--host-timeout', '1s', '5s', '192.168.1.0/24'],
+        'nmap': ['-sn', '-PR', '--max-retries', '1', '--min-rate', '100', '200', '--host-timeout', '1s', '5s', '192.168.1.0/24'],
         'dns-sd': ['-B', '_http._tcp', '_https._tcp', '_ssh._tcp', '_ftp._tcp', '_smb._tcp', '_airplay._tcp', 'local', '2>/dev/null'],
         'airport': ['-s'],
         'system_profiler': ['SPAirPortDataType'],
