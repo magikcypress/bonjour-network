@@ -24,7 +24,7 @@ class CommandValidator {
         'sudo',
 
         // Commandes de test
-        'which', 'echo', 'cat', 'grep'
+        'which', 'echo', 'cat', 'grep', 'perl'
     ]);
 
     // Paramètres autorisés pour chaque commande
@@ -33,7 +33,7 @@ class CommandValidator {
         'netstat': ['-rn', '-an'],
         'ifconfig': ['en0', 'en1', 'lo0', 'wlan0', 'eth0'],
         'ping': ['-c', '1', '-W', '1000', '500', '300'],
-        'nmap': ['-sn', '--max-retries', '1', '--host-timeout', '1s', '192.168.1.0/24'],
+        'nmap': ['-sn', '--max-retries', '1', '--min-rate', '100', '200', '--host-timeout', '1s', '5s', '192.168.1.0/24'],
         'dns-sd': ['-B', '_http._tcp', '_https._tcp', '_ssh._tcp', '_ftp._tcp', '_smb._tcp', '_airplay._tcp', 'local', '2>/dev/null'],
         'airport': ['-s'],
         'system_profiler': ['SPAirPortDataType'],
@@ -43,6 +43,7 @@ class CommandValidator {
         'scutil': ['--nwi'],
         'route': ['-n', 'get', '1.1.1.1'],
         'which': ['nmap', 'arping', 'arp-scan', 'iwlist', 'nmcli', 'iw'],
+        'perl': ['-e'],
         'wdutil': ['info'],
         // Commandes Linux/Raspberry Pi
         'iwlist': ['scan', 'wlan0', 'eth0'],
@@ -148,9 +149,14 @@ class CommandValidator {
      * @returns {Promise<Object>} - Résultat de l'exécution
      */
     static async safeExec(command) {
+        console.log(`🔧 CommandValidator - Validation de: ${command}`);
+
         if (!this.validate(command)) {
+            console.error(`🚫 CommandValidator - Commande rejetée: ${command}`);
             throw new Error(`Commande non autorisée: ${command}`);
         }
+
+        console.log(`✅ CommandValidator - Commande autorisée: ${command}`);
 
         // Détecter si on est sur Raspberry Pi/Linux
         const isRaspberryPi = this.detectRaspberryPi();
@@ -161,18 +167,22 @@ class CommandValidator {
             finalCommand = `sudo ${command}`;
         }
 
+        console.log(`🔧 CommandValidator - Exécution: ${finalCommand}`);
+
         try {
             const result = await execAsync(finalCommand, {
-                timeout: 10000, // Timeout de 10 secondes
+                timeout: 60000, // Timeout de 60 secondes pour nmap
                 maxBuffer: 1024 * 1024 // Buffer max de 1MB
             });
 
+            console.log(`✅ CommandValidator - Succès: ${command}`);
             return {
                 success: true,
                 stdout: result.stdout,
                 stderr: result.stderr
             };
         } catch (error) {
+            console.error(`❌ CommandValidator - Échec: ${command} - ${error.message}`);
             return {
                 success: false,
                 error: error.message,

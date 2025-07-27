@@ -91,20 +91,24 @@ export function validateManufacturerInfo(manufacturerInfo) {
 export function validateDevice(device) {
     if (!device || typeof device !== 'object') return false;
 
-    // Champs requis minimaux (seulement IP et MAC)
-    const hasRequiredFields = device.ip && device.mac;
+    // Champs requis minimaux (seulement IP)
+    const hasRequiredFields = device.ip;
     if (!hasRequiredFields) {
-        console.warn('❌ Appareil rejeté - IP ou MAC manquante:', device);
+        console.warn('❌ Appareil rejeté - IP manquante:', device);
         return false;
     }
 
     // Validation des champs de base
     const isValidIp = validateIpAddress(device.ip);
-    const isValidMac = validateMacAddress(device.mac);
+    const isValidMac = device.mac && device.mac !== 'N/A' ? validateMacAddress(device.mac) : true;
 
-    if (!isValidIp || !isValidMac) {
-        console.warn('❌ Appareil rejeté - IP ou MAC invalide:', device);
+    if (!isValidIp) {
+        console.warn('❌ Appareil rejeté - IP invalide:', device);
         return false;
+    }
+
+    if (!isValidMac) {
+        console.warn('⚠️ Appareil avec MAC invalide accepté:', device.ip);
     }
 
     // Les autres champs sont optionnels avec des valeurs par défaut
@@ -148,14 +152,17 @@ export function sanitizeDevice(device) {
 
     try {
         // Validation des champs requis
-        if (!validateIpAddress(device.ip) || !validateMacAddress(device.mac)) {
-            console.warn('❌ Appareil ignoré - IP ou MAC invalide:', device);
+        if (!validateIpAddress(device.ip)) {
+            console.warn('❌ Appareil ignoré - IP invalide:', device);
             return null;
         }
 
+        // MAC est optionnelle
+        const mac = device.mac && device.mac !== 'N/A' ? device.mac.toLowerCase() : 'N/A';
+
         return {
             ip: device.ip,
-            mac: device.mac.toLowerCase(),
+            mac: mac,
             hostname: validateString(device.hostname, 50) ? device.hostname.trim() : 'Unknown',
             deviceType: validateDeviceType(device.deviceType) ? device.deviceType : 'Unknown',
             lastSeen: validateTimestamp(device.lastSeen) ? device.lastSeen : new Date().toISOString(),

@@ -190,16 +190,16 @@ class ImprovedDeviceScanner {
         }
 
         if (scanMode === 'complete') {
-            // 5. Ping sweep intelligent (seulement les IPs probables) - avec timeout
-            this.emitProgress('ping', 'start', 'Ping sweep intelligent...', null, 'ping -c 1 -W 500');
+            // 5. Ping sweep complet (comme nmap) - avec timeout plus long
+            this.emitProgress('ping', 'start', 'Ping sweep complet (comme nmap)...', null, 'ping -c 1 -W 1000');
             try {
-                const pingPromise = this.intelligentPingSweep();
+                const pingPromise = this.completePingSweep();
                 const pingTimeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Ping sweep timeout')), 30000)
+                    setTimeout(() => reject(new Error('Ping sweep timeout')), 60000) // 60s au lieu de 30s
                 );
                 const pingDevices = await Promise.race([pingPromise, pingTimeout]);
                 this.addDevicesToMap(pingDevices, allDevices);
-                this.emitProgress('ping', 'success', `Ping sweep: ${pingDevices.length} appareils`);
+                this.emitProgress('ping', 'success', `Ping sweep complet: ${pingDevices.length} appareils`);
             } catch (error) {
                 this.emitProgress('ping', 'error', `Erreur ping: ${error.message}`);
             }
@@ -232,31 +232,36 @@ class ImprovedDeviceScanner {
                 this.emitProgress('arping', 'error', `Erreur arping: ${error.message}`);
             }
 
-            // 8. Scan Bonjour amélioré - avec timeout court
+            // 8. Scan Bonjour amélioré - avec timeout plus long
             this.emitProgress('bonjour', 'start', 'Scan Bonjour amélioré...', null, 'dns-sd -B');
             try {
                 const bonjourPromise = this.improvedBonjourScan();
                 const bonjourTimeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Bonjour timeout')), 10000)
+                    setTimeout(() => reject(new Error('Bonjour timeout')), 20000) // 20s au lieu de 10s
                 );
                 const bonjourDevices = await Promise.race([bonjourPromise, bonjourTimeout]);
                 this.addDevicesToMap(bonjourDevices, allDevices);
                 this.emitProgress('bonjour', 'success', `Bonjour: ${bonjourDevices.length} services`);
             } catch (error) {
-                this.emitProgress('bonjour', 'error', `Erreur Bonjour: ${error.message}`);
+                console.warn(`⚠️ Timeout Bonjour (normal): ${error.message}`);
+                this.emitProgress('bonjour', 'warning', `Bonjour timeout (normal) - ${error.message}`);
             }
         }
 
         let devices = Array.from(allDevices.values());
+        console.log(`📊 Après fusion: ${devices.length} appareils uniques`);
 
         // Filtrer et valider les appareils
         devices = this.validateAndFilterDevices(devices);
+        console.log(`📊 Après validation: ${devices.length} appareils valides`);
 
         // Prioriser l'appareil local
         devices = await this.prioritizeLocalDevice(devices);
+        console.log(`📊 Après priorisation locale: ${devices.length} appareils`);
 
         // Prioriser par qualité des données
         devices = this.prioritizeDevicesByQuality(devices);
+        console.log(`📊 Après priorisation qualité: ${devices.length} appareils`);
 
         this.emitProgress('scan', 'success', `Scan terminé: ${devices.length} appareils valides`);
 
@@ -462,6 +467,46 @@ class ImprovedDeviceScanner {
         return devices;
     }
 
+    async completePingSweep() {
+        if (!this.networkRange) return [];
+
+        const devices = [];
+        const baseIp = this.networkRange.split('.');
+        const maxConcurrent = 20; // Plus de parallélisme pour être plus rapide
+
+        console.log(`🎯 Ping sweep complet (comme nmap) sur toute la plage 192.168.1.0/24...`);
+
+        // Scanner toutes les adresses de 1 à 254 (comme nmap)
+        for (let batch = 0; batch < 254; batch += maxConcurrent) {
+            const promises = [];
+
+            for (let i = 0; i < maxConcurrent; i++) {
+                const lastOctet = batch + i + 1;
+                if (lastOctet <= 254) {
+                    const ip = `${baseIp[0]}.${baseIp[1]}.${baseIp[2]}.${lastOctet}`;
+                    promises.push(this.pingHost(ip));
+                }
+            }
+
+            if (promises.length > 0) {
+                try {
+                    const results = await Promise.allSettled(promises);
+                    for (const result of results) {
+                        if (result.status === 'fulfilled' && result.value) {
+                            devices.push(result.value);
+                            console.log(`✅ Découvert via ping complet: ${result.value.ip}`);
+                        }
+                    }
+                } catch (error) {
+                    // Continuer avec le batch suivant
+                }
+            }
+        }
+
+        console.log(`🎯 Ping sweep complet terminé: ${devices.length} appareils découverts`);
+        return devices;
+    }
+
     async quickTargetedPingSweep() {
         if (!this.networkRange) return [];
 
@@ -506,20 +551,44 @@ class ImprovedDeviceScanner {
     async improvedBonjourScan() {
         try {
             const devices = [];
-            const services = ['_http._tcp', '_https._tcp', '_ssh._tcp', '_ftp._tcp', '_smb._tcp', '_airplay._tcp'];
+            // Services les plus courants seulement pour éviter les timeouts
+            const services = ['_http._tcp', '_https._tcp', '_ssh._tcp'];
 
-            for (const service of services) {
+            console.log(`🎯 Scan Bonjour sur ${services.length} services...`);
+
+            // Scanner les services en parallèle avec timeout individuel
+            const servicePromises = services.map(async (service) => {
                 try {
-                    const result = await CommandValidator.safeExec(`dns-sd -B ${service} local 2>/dev/null`);
+                    // Timeout de 3 secondes par service avec perl
+                    const result = await Promise.race([
+                        CommandValidator.safeExec(`perl -e 'alarm 3; exec @ARGV' "dns-sd" "-B" "${service}" "local" 2>/dev/null`),
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error(`${service} timeout`)), 3000)
+                        )
+                    ]);
+
                     if (result.success) {
                         const bonjourDevices = this.parseBonjourOutput(result.stdout, service);
-                        devices.push(...bonjourDevices);
+                        console.log(`✅ Service ${service}: ${bonjourDevices.length} appareils`);
+                        return bonjourDevices;
                     }
+                    return [];
                 } catch (error) {
-                    // Ignorer les services non disponibles
+                    console.log(`⚠️ Service ${service} non disponible: ${error.message}`);
+                    return [];
+                }
+            });
+
+            // Attendre tous les services avec timeout global
+            const results = await Promise.allSettled(servicePromises);
+
+            for (const result of results) {
+                if (result.status === 'fulfilled') {
+                    devices.push(...result.value);
                 }
             }
 
+            console.log(`🎯 Scan Bonjour terminé: ${devices.length} appareils découverts`);
             return devices;
         } catch (error) {
             console.error('Erreur scan Bonjour amélioré:', error);
@@ -598,9 +667,14 @@ class ImprovedDeviceScanner {
     }
 
     validateAndFilterDevices(devices) {
-        return devices.filter(device => {
+        console.log(`🔍 Validation et filtrage de ${devices.length} appareils...`);
+
+        const filteredDevices = devices.filter(device => {
             // Validation IP de base
-            if (!device.ip || !this.isValidIp(device.ip)) return false;
+            if (!device.ip || !this.isValidIp(device.ip)) {
+                console.log(`🚫 Appareil rejeté - IP invalide: ${device.ip}`);
+                return false;
+            }
 
             // Filtrage intelligent des IPs réservées
             const ip = device.ip;
@@ -611,6 +685,7 @@ class ImprovedDeviceScanner {
                 ip.startsWith('224.') || // Multicast
                 ip.startsWith('255.') || // Broadcast
                 ip.startsWith('0.')) { // Réservé
+                console.log(`🚫 Appareil rejeté - IP réservée: ${ip}`);
                 return false;
             }
 
@@ -630,7 +705,7 @@ class ImprovedDeviceScanner {
 
             // Validation MAC (optionnelle mais recommandée)
             if (device.mac && device.mac !== 'N/A' && !this.isValidMac(device.mac)) {
-                console.log(`⚠️ MAC invalide pour ${device.ip}: ${device.mac}`);
+                console.log(`⚠️ MAC invalide pour ${device.ip}: ${device.mac} - mais appareil conservé`);
                 // Ne pas exclure, juste logger
             }
 
@@ -642,11 +717,22 @@ class ImprovedDeviceScanner {
 
             return true;
         });
+
+        console.log(`✅ Validation terminée: ${filteredDevices.length} appareils conservés sur ${devices.length}`);
+        return filteredDevices;
     }
 
     addDevicesToMap(devices, deviceMap) {
+        console.log(`📥 Ajout de ${devices.length} appareils à la map (actuellement ${deviceMap.size} appareils)`);
+
+        let newDevices = 0;
+        let mergedDevices = 0;
+
         for (const device of devices) {
-            if (!device.ip || !this.isValidIp(device.ip)) continue;
+            if (!device.ip || !this.isValidIp(device.ip)) {
+                console.log(`⚠️ Appareil ignoré - IP invalide: ${device.ip}`);
+                continue;
+            }
 
             const key = device.ip;
             if (!deviceMap.has(key)) {
@@ -656,21 +742,31 @@ class ImprovedDeviceScanner {
                     sources: [device.source || 'unknown'],
                     lastSeen: new Date().toISOString()
                 });
+                newDevices++;
+                console.log(`➕ Nouvel appareil ajouté: ${device.ip} (${device.source})`);
             } else {
                 // Fusion intelligente des informations
                 const existing = deviceMap.get(key);
                 const merged = this.mergeDeviceInfo(existing, device);
                 deviceMap.set(key, merged);
+                mergedDevices++;
+                console.log(`🔄 Appareil fusionné: ${device.ip} (${device.source} + ${existing.source})`);
             }
         }
+
+        console.log(`📊 Résumé ajout: ${newDevices} nouveaux, ${mergedDevices} fusionnés, total: ${deviceMap.size}`);
     }
 
     mergeDeviceInfo(existing, newDevice) {
+        console.log(`🔄 Fusion d'appareils: ${existing.ip} (${existing.source}) + ${newDevice.source}`);
+
         // Logique de fusion avec priorité claire
         const merged = {
             ip: existing.ip, // Toujours garder l'IP existante
             lastSeen: new Date().toISOString(),
-            sources: [...(existing.sources || [existing.source]), newDevice.source].filter((v, i, a) => a.indexOf(v) === i)
+            sources: [...(existing.sources || [existing.source]), newDevice.source].filter((v, i, a) => a.indexOf(v) === i),
+            discoveredBy: newDevice.discoveredBy || existing.discoveredBy,
+            security: newDevice.security || existing.security
         };
 
         // MAC : Priorité aux MAC complètes
@@ -833,8 +929,19 @@ class ImprovedDeviceScanner {
 
     isValidMac(mac) {
         if (!mac || mac === 'N/A') return false;
-        const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
-        return macRegex.test(mac);
+
+        // MAC complète (6 octets)
+        const fullMacRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+        if (fullMacRegex.test(mac)) return true;
+
+        // MAC partielle (moins de 6 octets mais format valide)
+        const partialMacRegex = /^([0-9A-Fa-f]{2}[:-]){1,4}([0-9A-Fa-f]{2})$/;
+        if (partialMacRegex.test(mac)) {
+            console.log(`⚠️ MAC partielle acceptée: ${mac}`);
+            return true;
+        }
+
+        return false;
     }
 
     isValidIp(ip) {
@@ -885,23 +992,57 @@ class ImprovedDeviceScanner {
                 throw new Error('Plage réseau non disponible');
             }
 
-            const result = await CommandValidator.safeExec(`nmap -sn ${this.networkRange}/24`);
+            console.log(`🎯 Scan nmap complet sur ${this.networkRange}/24...`);
+
+            // Utiliser des options optimisées pour plus de rapidité
+            const command = `nmap -sn ${this.networkRange}/24 --max-retries 1 --min-rate 200 --host-timeout 5s`;
+            console.log(`🔧 Commande nmap: ${command}`);
+
+            const result = await CommandValidator.safeExec(command);
+            console.log(`📊 Résultat nmap - Success: ${result.success}, Error: ${result.error || 'none'}`);
+
             if (!result.success) {
-                throw new Error('Nmap non disponible ou échec');
+                console.error(`❌ Nmap échec: ${result.error}`);
+                console.error(`📄 Stdout: ${result.stdout}`);
+                console.error(`📄 Stderr: ${result.stderr}`);
+                throw new Error(`Nmap non disponible ou échec: ${result.error}`);
             }
+
+            console.log(`📄 Nmap stdout (premiers 500 chars): ${result.stdout.substring(0, 500)}...`);
 
             const devices = [];
             const lines = result.stdout.split('\n');
 
             for (const line of lines) {
-                const match = line.match(/Nmap scan report for (.+?) \((\d+\.\d+\.\d+\.\d+)\)/);
-                if (match) {
-                    const hostname = match[1];
-                    const ip = match[2];
-
+                // Pattern pour "Nmap scan report for 192.168.1.20"
+                const simpleMatch = line.match(/Nmap scan report for (\d+\.\d+\.\d+\.\d+)/);
+                if (simpleMatch) {
+                    const ip = simpleMatch[1];
                     devices.push({
                         ip,
                         mac: null, // Nmap ne donne pas toujours la MAC
+                        hostname: 'Unknown',
+                        deviceType: 'Unknown',
+                        lastSeen: new Date().toISOString(),
+                        isActive: true,
+                        isLocal: false,
+                        manufacturerInfo: { identified: false, manufacturer: 'Unknown', confidence: 0, source: 'nmap' },
+                        discoveredBy: 'nmap',
+                        source: 'nmap'
+                    });
+                    console.log(`✅ Nmap découvert: ${ip}`);
+                    continue;
+                }
+
+                // Pattern pour "Nmap scan report for pi.hole (192.168.1.58)"
+                const hostnameMatch = line.match(/Nmap scan report for (.+?) \((\d+\.\d+\.\d+\.\d+)\)/);
+                if (hostnameMatch) {
+                    const hostname = hostnameMatch[1];
+                    const ip = hostnameMatch[2];
+
+                    devices.push({
+                        ip,
+                        mac: null,
                         hostname: hostname !== ip ? hostname : 'Unknown',
                         deviceType: 'Unknown',
                         lastSeen: new Date().toISOString(),
@@ -911,9 +1052,11 @@ class ImprovedDeviceScanner {
                         discoveredBy: 'nmap',
                         source: 'nmap'
                     });
+                    console.log(`✅ Nmap découvert: ${hostname} (${ip})`);
                 }
             }
 
+            console.log(`🎯 Scan nmap terminé: ${devices.length} appareils découverts`);
             return devices;
         } catch (error) {
             console.error('Erreur lors du scan nmap:', error);

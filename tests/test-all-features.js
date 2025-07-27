@@ -1305,9 +1305,9 @@ async function testCompleteScanStepsConsistency(page) {
                     { id: 'netstat', name: 'Scan netstat', description: 'Connexions réseau actives' },
                     { id: 'dns', name: 'Résolution DNS', description: 'Résolution DNS inversée' },
                     { id: 'ping', name: 'Ping sweep', description: 'Découverte active sur 254 adresses' },
-                    { id: 'nmap', name: 'Scan nmap', description: 'Découverte avec nmap (si disponible)' },
+                    { id: 'nmap', name: 'Scan nmap', description: 'Découverte avec nmap' },
                     { id: 'bonjour', name: 'Scan Bonjour', description: 'Services réseau (HTTP, SSH, etc.)' },
-                    { id: 'arping', name: 'Scan arping', description: 'Découverte ARP active (si disponible)' },
+                    { id: 'arping', name: 'Scan arping', description: 'Découverte ARP active' },
                     { id: 'mistral', name: 'Identification Mistral AI', description: 'Identification des fabricants' }
                 ]
             };

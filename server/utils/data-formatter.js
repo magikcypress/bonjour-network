@@ -42,10 +42,16 @@ class DataFormatter {
                 security: this.sanitizeSecurity(device.security)
             };
 
-            // Vérifier que les champs obligatoires sont présents
-            if (!formattedDevice.ip || !formattedDevice.mac) {
-                logger.warn(`❌ Appareil ignoré - IP ou MAC manquante: ${JSON.stringify(device)}`);
+            // Vérifier que l'IP est présente (obligatoire)
+            if (!formattedDevice.ip) {
+                logger.warn(`❌ Appareil ignoré - IP manquante: ${JSON.stringify(device)}`);
                 return null;
+            }
+
+            // MAC est optionnelle mais recommandée
+            if (!formattedDevice.mac) {
+                logger.info(`⚠️ Appareil sans MAC accepté: ${formattedDevice.ip}`);
+                formattedDevice.mac = 'N/A';
             }
 
             return formattedDevice;
@@ -123,16 +129,23 @@ class DataFormatter {
         // Normaliser le format MAC (ajouter les deux-points si nécessaire)
         let normalizedMac = mac.replace(/[.-]/g, ':').toLowerCase();
 
-        // Vérifier le format
-        const macRegex = /^([0-9a-f]{2}:){5}[0-9a-f]{2}$/;
-        if (macRegex.test(normalizedMac)) {
+        // Vérifier le format MAC complète (6 octets)
+        const fullMacRegex = /^([0-9a-f]{2}:){5}[0-9a-f]{2}$/;
+        if (fullMacRegex.test(normalizedMac)) {
             return normalizedMac;
         }
 
-        // Essayer de formater si c'est une chaîne continue
+        // Essayer de formater si c'est une chaîne continue de 12 caractères
         if (normalizedMac.length === 12) {
             const formatted = normalizedMac.match(/.{2}/g).join(':');
-            return macRegex.test(formatted) ? formatted : null;
+            return fullMacRegex.test(formatted) ? formatted : null;
+        }
+
+        // Accepter les MAC partielles (moins de 6 octets mais format valide)
+        const partialMacRegex = /^([0-9a-f]{2}:){1,4}[0-9a-f]{2}$/;
+        if (partialMacRegex.test(normalizedMac)) {
+            logger.info(`⚠️ MAC partielle acceptée: ${normalizedMac}`);
+            return normalizedMac;
         }
 
         return null;
