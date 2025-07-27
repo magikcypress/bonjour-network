@@ -251,6 +251,10 @@ class ImprovedDeviceScanner {
         let devices = Array.from(allDevices.values());
         console.log(`📊 Après fusion: ${devices.length} appareils uniques`);
 
+        // Enrichir avec les MAC depuis ARP pour les appareils sans MAC
+        devices = await this.enrichDevicesWithArp(devices);
+        console.log(`📊 Après enrichissement ARP: ${devices.length} appareils`);
+
         // Filtrer et valider les appareils
         devices = this.validateAndFilterDevices(devices);
         console.log(`📊 Après validation: ${devices.length} appareils valides`);
@@ -266,24 +270,25 @@ class ImprovedDeviceScanner {
         this.emitProgress('scan', 'success', `Scan terminé: ${devices.length} appareils valides`);
 
         if (devices.length > 0) {
-            // Identification Mistral AI - seulement en mode complet ou si explicitement demandé
+            // Identification des fabricants - pour tous les modes
             console.log(`🔍 DEBUG: Mode de scan = "${scanMode}" (type: ${typeof scanMode}), Appareils = ${devices.length}`);
 
-            // Identification Mistral AI pour tous les modes (fast et complete)
-            console.log(`🔍 DEBUG: Mode ${scanMode} - Lancement identification Mistral AI`);
-            this.emitProgress('mistral', 'start', 'Identification Mistral AI...', null, 'Mistral AI API');
+            console.log(`🔍 DEBUG: Mode ${scanMode} - Lancement identification des fabricants`);
+            this.emitProgress('manufacturer', 'start', 'Identification des fabricants...', null, 'Manufacturer Database');
 
             try {
-                const identifiedDevices = await this.identifyDevicesWithMistralAI(devices);
+                const ManufacturerService = require('./manufacturer-service');
+                const manufacturerService = new ManufacturerService();
+                const identifiedDevices = await manufacturerService.identifyDevices(devices);
 
                 // Re-prioriser après identification
                 const finalDevices = this.prioritizeDevicesByQuality(identifiedDevices);
 
-                this.emitProgress('mistral', 'success', `Identification: ${finalDevices.length} appareils`);
+                this.emitProgress('manufacturer', 'success', `Identification: ${finalDevices.length} appareils`);
                 return finalDevices;
             } catch (error) {
-                console.error('❌ Erreur lors de l\'identification Mistral AI:', error);
-                this.emitProgress('mistral', 'error', `Erreur identification: ${error.message}`);
+                console.error('❌ Erreur lors de l\'identification des fabricants:', error);
+                this.emitProgress('manufacturer', 'error', `Erreur identification: ${error.message}`);
 
                 // En cas d'erreur, retourner les appareils sans identification
                 const finalDevices = this.prioritizeDevicesByQuality(devices);
@@ -824,6 +829,37 @@ class ImprovedDeviceScanner {
         return merged;
     }
 
+    async enrichDevicesWithArp(devices) {
+        console.log(`🔍 Enrichissement ARP pour ${devices.length} appareils...`);
+
+        try {
+            // Récupérer toutes les MAC depuis ARP
+            const arpDevices = await this.improvedArpScan();
+            const arpMap = new Map();
+            arpDevices.forEach(device => arpMap.set(device.ip, device.mac));
+
+            let enrichedCount = 0;
+            const enrichedDevices = devices.map(device => {
+                // Si l'appareil n'a pas de MAC ou a 'N/A', essayer de la récupérer depuis ARP
+                if ((!device.mac || device.mac === 'N/A') && arpMap.has(device.ip)) {
+                    const mac = arpMap.get(device.ip);
+                    if (this.isValidMac(mac)) {
+                        console.log(`✅ MAC ajoutée pour ${device.ip}: ${mac}`);
+                        enrichedCount++;
+                        return { ...device, mac };
+                    }
+                }
+                return device;
+            });
+
+            console.log(`✅ ${enrichedCount} appareils enrichis avec des MAC depuis ARP`);
+            return enrichedDevices;
+        } catch (error) {
+            console.error('❌ Erreur lors de l\'enrichissement ARP:', error);
+            return devices;
+        }
+    }
+
     async prioritizeLocalDevice(devices) {
         if (!this.localIp) return devices;
 
@@ -930,12 +966,19 @@ class ImprovedDeviceScanner {
     isValidMac(mac) {
         if (!mac || mac === 'N/A') return false;
 
-        // MAC complète (6 octets)
+        // MAC complète (6 octets) - format standard
         const fullMacRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
         if (fullMacRegex.test(mac)) return true;
 
-        // MAC partielle (moins de 6 octets mais format valide)
-        const partialMacRegex = /^([0-9A-Fa-f]{2}[:-]){1,4}([0-9A-Fa-f]{2})$/;
+        // MAC avec octets variables (1-2 caractères par octet)
+        const flexibleMacRegex = /^([0-9A-Fa-f]{1,2}[:-]){5}([0-9A-Fa-f]{1,2})$/;
+        if (flexibleMacRegex.test(mac)) {
+            console.log(`⚠️ MAC flexible acceptée: ${mac}`);
+            return true;
+        }
+
+        // MAC partielle (1 à 5 octets mais format valide)
+        const partialMacRegex = /^([0-9A-Fa-f]{2}[:-]){1,5}([0-9A-Fa-f]{2})$/;
         if (partialMacRegex.test(mac)) {
             console.log(`⚠️ MAC partielle acceptée: ${mac}`);
             return true;
@@ -994,8 +1037,8 @@ class ImprovedDeviceScanner {
 
             console.log(`🎯 Scan nmap complet sur ${this.networkRange}/24...`);
 
-            // Utiliser des options optimisées pour plus de rapidité
-            const command = `nmap -sn ${this.networkRange}/24 --max-retries 1 --min-rate 200 --host-timeout 5s`;
+            // Utiliser des options optimisées avec ARP scan forcé pour récupérer les MAC
+            const command = `nmap -sn -PR ${this.networkRange}/24 --max-retries 1 --min-rate 200 --host-timeout 5s`;
             console.log(`🔧 Commande nmap: ${command}`);
 
             const result = await CommandValidator.safeExec(command);
@@ -1020,7 +1063,7 @@ class ImprovedDeviceScanner {
                     const ip = simpleMatch[1];
                     devices.push({
                         ip,
-                        mac: null, // Nmap ne donne pas toujours la MAC
+                        mac: 'N/A', // Nmap ne donne pas toujours la MAC
                         hostname: 'Unknown',
                         deviceType: 'Unknown',
                         lastSeen: new Date().toISOString(),
@@ -1057,6 +1100,20 @@ class ImprovedDeviceScanner {
             }
 
             console.log(`🎯 Scan nmap terminé: ${devices.length} appareils découverts`);
+
+            // Enrichir avec les MAC depuis la table ARP
+            const arpDevices = await this.improvedArpScan();
+            const arpMap = new Map();
+            arpDevices.forEach(device => arpMap.set(device.ip, device.mac));
+
+            // Fusionner les MAC trouvées
+            devices.forEach(device => {
+                if (arpMap.has(device.ip)) {
+                    device.mac = arpMap.get(device.ip);
+                    console.log(`✅ MAC ajoutée pour ${device.ip}: ${device.mac}`);
+                }
+            });
+
             return devices;
         } catch (error) {
             console.error('Erreur lors du scan nmap:', error);

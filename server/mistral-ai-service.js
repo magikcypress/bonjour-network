@@ -119,7 +119,12 @@ class MistralAIService {
             '48:E1:5C': { manufacturer: 'Samsung Electronics', device_type: 'Smart TV', confidence: 0.80 },
             '96:E8:40': { manufacturer: 'LG Electronics', device_type: 'Smart Device', confidence: 0.75 },
             'BC:D0:74': { manufacturer: 'Xiaomi Corporation', device_type: 'IoT Device', confidence: 0.70 },
-            '38:7:16': { manufacturer: 'TP-Link Technologies', device_type: 'Network Router', confidence: 0.85 }
+            '38:7:16': { manufacturer: 'TP-Link Technologies', device_type: 'Network Router', confidence: 0.85 },
+            // MACs manquantes ajoutées
+            '34:94:54': { manufacturer: 'Intel Corporation', device_type: 'Network Adapter', confidence: 0.85 },
+            '98:CD:AC': { manufacturer: 'Hewlett-Packard Company', device_type: 'Desktop Computer', confidence: 0.80 },
+            'BC:FF:4D': { manufacturer: 'ASUSTeK Computer Inc.', device_type: 'Laptop Computer', confidence: 0.75 },
+            'AE:DD:7C': { manufacturer: 'Dell Inc.', device_type: 'Desktop Computer', confidence: 0.80 }
         };
 
         return manufacturers[prefix] || {

@@ -1,159 +1,124 @@
-const MistralAIService = require('./mistral-ai-service');
-const fs = require('fs').promises;
+const fs = require('fs');
 const path = require('path');
 
 class ManufacturerService {
     constructor() {
-        this.manufacturersFile = path.join(__dirname, 'data', 'manufacturers.json');
-        this.manufacturers = {};
-        this.mistralService = new MistralAIService();
+        this.manufacturers = this.loadManufacturers();
     }
 
-    // Charger la base de données locale
-    async loadManufacturers() {
+    loadManufacturers() {
         try {
-            const data = await fs.readFile(this.manufacturersFile, 'utf8');
-            this.manufacturers = JSON.parse(data);
-            console.log(`✅ Base de données chargée: ${Object.keys(this.manufacturers).length} fabricants`);
+            const dataPath = path.join(__dirname, 'data', 'manufacturers.json');
+            if (fs.existsSync(dataPath)) {
+                const data = fs.readFileSync(dataPath, 'utf8');
+                const manufacturers = JSON.parse(data);
+                console.log(`✅ Base de données chargée: ${Object.keys(manufacturers).length} fabricants`);
+                return manufacturers;
+            }
         } catch (error) {
-            console.log('⚠️ Base de données non trouvée, création d\'une nouvelle base');
-            this.manufacturers = {};
+            console.warn('⚠️ Impossible de charger manufacturers.json:', error.message);
         }
+
+        console.warn('⚠️ Utilisation des données par défaut (fichier manufacturers.json non trouvé)');
+        // Base de données par défaut minimale (fallback)
+        return {
+            "B827EB": { "manufacturer": "Raspberry Pi Foundation", "deviceType": "Single Board Computer", "confidence": 0.95 },
+            "48E15C": { "manufacturer": "Samsung Electronics", "deviceType": "Smart TV", "confidence": 0.80 },
+            "96E840": { "manufacturer": "LG Electronics", "deviceType": "Smart Device", "confidence": 0.75 },
+            "BCD074": { "manufacturer": "Xiaomi Corporation", "deviceType": "IoT Device", "confidence": 0.70 }
+        };
     }
 
-    // Sauvegarder la base de données locale
-    async saveManufacturers() {
+    identifyManufacturer(mac) {
+        if (!mac || mac === 'N/A') {
+            return {
+                identified: false,
+                manufacturer: 'Unknown',
+                device_type: 'Unknown',
+                confidence: 0,
+                source: 'none'
+            };
+        }
+
+        // Normaliser la MAC (enlever les : et -)
+        const normalizedMac = mac.replace(/[:-]/g, '').toUpperCase();
+
+        // Essayer différents préfixes (3, 6, 9 caractères)
+        const prefixes = [
+            normalizedMac.substring(0, 6),  // 6 caractères (OUI standard)
+            normalizedMac.substring(0, 3),  // 3 caractères (préfixe court)
+            normalizedMac.substring(0, 9)   // 9 caractères (préfixe long)
+        ];
+
+        for (const prefix of prefixes) {
+            if (this.manufacturers[prefix]) {
+                const info = this.manufacturers[prefix];
+                console.log(`✅ Fabricant identifié pour ${mac}: ${info.manufacturer} (préfixe: ${prefix})`);
+                return {
+                    identified: true,
+                    manufacturer: info.manufacturer,
+                    device_type: info.deviceType || 'Unknown Device',
+                    confidence: info.confidence,
+                    source: 'local_database'
+                };
+            }
+        }
+
+        console.log(`❌ Fabricant non trouvé pour ${mac} (préfixes testés: ${prefixes.join(', ')})`);
+        return {
+            identified: false,
+            manufacturer: 'Unknown',
+            device_type: 'Unknown',
+            confidence: 0,
+            source: 'unknown'
+        };
+    }
+
+    async identifyDevices(devices) {
+        console.log(`🔍 Identification des fabricants pour ${devices.length} appareils...`);
+
+        const identifiedDevices = devices.map(device => {
+            if (device.mac && device.mac !== 'N/A') {
+                const manufacturerInfo = this.identifyManufacturer(device.mac);
+                return {
+                    ...device,
+                    manufacturer: manufacturerInfo.manufacturer,
+                    deviceType: manufacturerInfo.device_type,
+                    manufacturerInfo: manufacturerInfo
+                };
+            }
+            return device;
+        });
+
+        const identifiedCount = identifiedDevices.filter(d => d.manufacturerInfo?.identified).length;
+        console.log(`✅ ${identifiedCount} appareils identifiés sur ${devices.length}`);
+
+        return identifiedDevices;
+    }
+
+    // Méthode pour ajouter de nouveaux fabricants
+    addManufacturer(prefix, manufacturer, deviceType, confidence = 0.8) {
+        this.manufacturers[prefix.toUpperCase()] = {
+            manufacturer,
+            device_type: deviceType,
+            confidence
+        };
+        console.log(`➕ Fabricant ajouté: ${prefix} -> ${manufacturer}`);
+    }
+
+    // Méthode pour sauvegarder la base de données
+    saveManufacturers() {
         try {
-            await fs.mkdir(path.dirname(this.manufacturersFile), { recursive: true });
-            await fs.writeFile(this.manufacturersFile, JSON.stringify(this.manufacturers, null, 2));
-            console.log('✅ Base de données sauvegardée');
+            const dataPath = path.join(__dirname, 'data', 'manufacturers.json');
+            const dir = path.dirname(dataPath);
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+            fs.writeFileSync(dataPath, JSON.stringify(this.manufacturers, null, 2));
+            console.log('💾 Base de données des fabricants sauvegardée');
         } catch (error) {
             console.error('❌ Erreur lors de la sauvegarde:', error);
         }
-    }
-
-    // Identifier un fabricant par adresse MAC
-    async identifyManufacturer(mac) {
-        // 1. Vérifier d'abord la base locale
-        const localResult = this.identifyFromLocal(mac);
-        if (localResult.identified) {
-            return localResult;
-        }
-
-        // 2. Demander à Mistral AI
-        try {
-            const mistralResult = await this.mistralService.identifyDevice(mac);
-
-            // 3. Ajouter à la base locale si identifié
-            if (mistralResult.identified && mistralResult.manufacturer !== 'Unknown Manufacturer') {
-                await this.addToLocalDatabase(mac, mistralResult);
-            }
-
-            return mistralResult;
-        } catch (error) {
-            console.error(`❌ Erreur identification Mistral pour ${mac}:`, error);
-            return {
-                manufacturer: 'Unknown Manufacturer',
-                deviceType: 'Unknown Device',
-                confidence: 0,
-                identified: false
-            };
-        }
-    }
-
-    // Identifier depuis la base locale
-    identifyFromLocal(mac) {
-        const macPrefix = mac.replace(/:/g, '').substring(0, 6).toUpperCase();
-
-        if (this.manufacturers[macPrefix]) {
-            // Mapper les fabricants vers les types d'appareils
-            const deviceTypeMap = {
-                'Raspberry Pi Foundation': 'Single Board Computer',
-                'Synology Inc.': 'Network Attached Storage',
-                'Apple Inc.': 'Mobile Device',
-                'Samsung Electronics': 'Smart TV',
-                'LG Electronics': 'Smart Device',
-                'Xiaomi Corporation': 'IoT Device',
-                'TP-Link Technologies': 'Network Router'
-            };
-
-            const manufacturer = this.manufacturers[macPrefix].manufacturer;
-            const deviceType = deviceTypeMap[manufacturer] || 'Unknown Device';
-
-            return {
-                manufacturer: manufacturer,
-                deviceType: deviceType,
-                confidence: 0.9, // Haute confiance pour la base locale
-                identified: true,
-                source: 'local'
-            };
-        }
-
-        return {
-            manufacturer: 'Unknown Manufacturer',
-            deviceType: 'Unknown Device',
-            confidence: 0,
-            identified: false,
-            source: 'local'
-        };
-    }
-
-    // Ajouter à la base locale
-    async addToLocalDatabase(mac, mistralResult) {
-        const macPrefix = mac.replace(/:/g, '').substring(0, 6).toUpperCase();
-
-        this.manufacturers[macPrefix] = {
-            manufacturer: mistralResult.manufacturer,
-            deviceType: mistralResult.deviceType,
-            confidence: mistralResult.confidence,
-            addedAt: new Date().toISOString(),
-            mac: mac
-        };
-
-        await this.saveManufacturers();
-        console.log(`✅ Ajouté à la base locale: ${macPrefix} -> ${mistralResult.manufacturer}`);
-    }
-
-    // Obtenir des statistiques sur la base
-    getStats() {
-        const total = Object.keys(this.manufacturers).length;
-        const identified = Object.values(this.manufacturers).filter(m => m.confidence > 0.5).length;
-
-        return {
-            totalManufacturers: total,
-            identifiedDevices: identified,
-            successRate: total > 0 ? (identified / total * 100).toFixed(1) : 0
-        };
-    }
-
-    // Lister tous les fabricants
-    getAllManufacturers() {
-        return this.manufacturers;
-    }
-
-    // Rechercher par fabricant
-    searchByManufacturer(manufacturerName) {
-        const results = [];
-        for (const [prefix, data] of Object.entries(this.manufacturers)) {
-            if (data.manufacturer.toLowerCase().includes(manufacturerName.toLowerCase())) {
-                results.push({
-                    macPrefix: prefix,
-                    ...data
-                });
-            }
-        }
-        return results;
-    }
-
-    // Exporter la base en CSV
-    exportToCSV() {
-        const csv = ['MAC Prefix,Manufacturer,Device Type,Confidence,Added At\n'];
-
-        for (const [prefix, data] of Object.entries(this.manufacturers)) {
-            csv.push(`${prefix},${data.manufacturer},${data.deviceType},${data.confidence},${data.addedAt}\n`);
-        }
-
-        return csv.join('');
     }
 }
 

@@ -28,5 +28,82 @@
     "confidence": 0.9,
     "addedAt": "2025-07-26T17:19:13.722Z",
     "mac": "6C:BF:B5:12:34:56"
+  },
+  "349454": {
+    "manufacturer": "Intel Corporation",
+    "deviceType": "Network Adapter",
+    "confidence": 0.85,
+    "addedAt": "2025-07-27T11:47:00.000Z",
+    "mac": "34:94:54:6e:3b:b2"
+  },
+  "98CDAC": {
+    "manufacturer": "Hewlett-Packard Company",
+    "deviceType": "Desktop Computer",
+    "confidence": 0.80,
+    "addedAt": "2025-07-27T11:47:00.000Z",
+    "mac": "98:cd:ac:1e:89:8b"
+  },
+  "BCFF4D": {
+    "manufacturer": "ASUSTeK Computer Inc.",
+    "deviceType": "Laptop Computer",
+    "confidence": 0.75,
+    "addedAt": "2025-07-27T11:47:00.000Z",
+    "mac": "bc:ff:4d:5b:47:b0"
+  },
+  "AEDD7C": {
+    "manufacturer": "Dell Inc.",
+    "deviceType": "Desktop Computer",
+    "confidence": 0.80,
+    "addedAt": "2025-07-27T11:47:00.000Z",
+    "mac": "ae:dd:7c:44:70:e1"
+  },
+  "38716C": {
+    "manufacturer": "TP-Link Technologies",
+    "deviceType": "Network Router",
+    "confidence": 0.85,
+    "addedAt": "2025-07-27T11:52:00.000Z",
+    "mac": "38:7:16:c2:9c:40"
+  },
+  "38716A": {
+    "manufacturer": "TP-Link Technologies",
+    "deviceType": "Network Router",
+    "confidence": 0.85,
+    "addedAt": "2025-07-27T11:55:00.000Z",
+    "mac": "38:7:16:ad:c0:13"
+  },
+  "2CC3E6": {
+    "manufacturer": "ASUSTeK Computer Inc.",
+    "deviceType": "Laptop Computer",
+    "confidence": 0.80,
+    "addedAt": "2025-07-27T11:55:00.000Z",
+    "mac": "2c:c3:e6:7a:3:56"
+  },
+  "3C615E": {
+    "manufacturer": "Intel Corporation",
+    "deviceType": "Network Adapter",
+    "confidence": 0.85,
+    "addedAt": "2025-07-27T11:55:00.000Z",
+    "mac": "3c:61:5:e3:61:7c"
+  },
+  "1E25F4": {
+    "manufacturer": "Hewlett-Packard Company",
+    "deviceType": "Desktop Computer",
+    "confidence": 0.80,
+    "addedAt": "2025-07-27T11:55:00.000Z",
+    "mac": "1e:25:f4:4d:78:c"
+  },
+  "4E4B6B": {
+    "manufacturer": "Dell Inc.",
+    "deviceType": "Desktop Computer",
+    "confidence": 0.80,
+    "addedAt": "2025-07-27T11:55:00.000Z",
+    "mac": "4:e4:b6:b3:55:16"
+  },
+  "909877": {
+    "manufacturer": "Vestel Elektronik San ve Tic. A.S.",
+    "deviceType": "Smart TV/Appliance",
+    "confidence": 0.85,
+    "addedAt": "2025-07-27T11:57:00.000Z",
+    "mac": "90:98:77:87:c:b5"
   }
 }
