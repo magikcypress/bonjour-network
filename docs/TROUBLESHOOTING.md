@@ -321,3 +321,431 @@ curl -v http://localhost:5001/api/networks
 - [ ] Variables d'environnement configurées
 
 **Si tous les points sont cochés, l'application devrait fonctionner correctement !** 🎉
+
+## 🔍 **Nouvelles Erreurs - Fonctionnalités Récentes**
+
+### **4. Erreur `arping: command not found` (macOS)**
+
+#### **Symptômes :**
+
+```
+CommandValidator - Échec: arping -c 1 -W 1000 192.168.1.1 - Command failed: arping: command not found
+```
+
+#### **Cause :**
+
+`arping` n'est pas installé par défaut sur macOS.
+
+#### **Solutions :**
+
+**A. Utilisation automatique de nmap (Recommandé)**
+
+```bash
+# Le scanner détecte automatiquement macOS et utilise nmap
+# Aucune action requise - fonctionne automatiquement
+```
+
+**B. Installation manuelle (Optionnel)**
+
+```bash
+# Essayer d'installer arping (peut ne pas être disponible)
+brew install iputils
+
+# Vérifier si nmap est disponible
+which nmap
+```
+
+**C. Vérification**
+
+```bash
+# Tester le scan
+node -e "const scanner = require('./improved-device-scanner.js'); new scanner().scanWithArping().then(console.log)"
+```
+
+### **5. Erreur `networksetup` rejetée par CommandValidator**
+
+#### **Symptômes :**
+
+```
+CommandValidator - Échec: networksetup -getinfo "AX88179A" - Command failed: networksetup -getinfo "AX88179A"
+🚫 Paramètre non autorisé pour networksetup: "AX88179A"
+```
+
+#### **Cause :**
+
+Le nom d'interface n'est pas dans la liste des services autorisés.
+
+#### **Solutions :**
+
+**A. Vérifier les interfaces disponibles**
+
+```bash
+# Lister toutes les interfaces
+networksetup -listallnetworkservices
+
+# Tester une interface spécifique
+networksetup -getinfo "Wi-Fi"
+```
+
+**B. Ajouter l'interface manuellement**
+
+```javascript
+// Dans server/security/command-validator.js
+const allowedServices = [
+    'Wi-Fi', 'AirPort', 'Ethernet', 
+    'Thunderbolt Ethernet', 'Thunderbolt Bridge',
+    'iPhone USB', 'Tailscale', 'AX88179A'  // Ajouter ici
+];
+```
+
+**C. Vérification**
+
+```bash
+# Tester la détection d'interfaces
+node -e "const detector = require('./utils/network-detector.js'); new detector().getNetworkInterfaces().then(console.log)"
+```
+
+### **6. Pas d'appareils Bonjour détectés**
+
+#### **Symptômes :**
+
+```
+Message: Scan Bonjour: 0 appareils
+```
+
+#### **Causes Possibles :**
+
+- Service Bonjour non actif
+- Permissions réseau insuffisantes
+- Aucun appareil Bonjour sur le réseau
+- Timeout trop court
+
+#### **Solutions :**
+
+**A. Vérifier le service Bonjour**
+
+```bash
+# Tester manuellement
+dns-sd -B _http._tcp local
+
+# Vérifier les permissions
+ls -la /usr/bin/dns-sd
+```
+
+**B. Augmenter le timeout**
+
+```javascript
+// Dans improved-device-scanner.js
+const BONJOUR_TIMEOUT = 10000; // Augmenter à 10 secondes
+```
+
+**C. Tester les services spécifiques**
+
+```bash
+# Tester HTTP
+dns-sd -B _http._tcp local
+
+# Tester SSH
+dns-sd -B _ssh._tcp local
+
+# Tester HTTPS
+dns-sd -B _https._tcp local
+```
+
+### **7. Appareils Shelly non détectés**
+
+#### **Symptômes :**
+
+```
+# Shelly découvert par Bonjour mais pas dans la liste finale
+Message: Scan Bonjour: 1 appareils (shellycolorbulb-3494546E3BB2)
+# Mais pas dans les résultats finaux
+```
+
+#### **Causes :**
+
+- IP `Unknown` ou `undefined`
+- MAC non extraite correctement
+- Filtrage trop strict
+
+#### **Solutions :**
+
+**A. Vérifier l'extraction MAC**
+
+```javascript
+// Dans improved-device-scanner.js
+// Vérifier que la MAC est extraite correctement
+console.log('🔍 MAC extraite:', mac);
+```
+
+**B. Vérifier le filtrage**
+
+```javascript
+// S'assurer que les appareils Bonjour ne sont pas filtrés
+if (device.source === 'bonjour') {
+    // Accepter même sans IP valide
+}
+```
+
+**C. Test manuel**
+
+```bash
+# Tester l'extraction MAC
+node -e "
+const deviceName = 'shellycolorbulb-3494546E3BB2';
+const macMatch = deviceName.match(/([0-9A-Fa-f]{2}){3,6}/);
+if (macMatch) {
+    const mac = macMatch[0].match(/.{1,2}/g).join(':').toLowerCase();
+    console.log('MAC extraite:', mac);
+}
+"
+```
+
+### **8. Erreur `ping: command not found` (Linux/Raspberry Pi)**
+
+#### **Symptômes :**
+
+```
+CommandValidator - Échec: ping -c 1 -W 300 192.168.1.174 - Command failed: ping -c 1 -W 300 192.168.1.174
+```
+
+#### **Cause :**
+
+Paramètre `-W` non supporté sur certaines versions de `ping`.
+
+#### **Solutions :**
+
+**A. Installation des outils réseau**
+
+```bash
+# Sur Raspberry Pi
+sudo apt-get update
+sudo apt-get install -y iputils-ping nmap arp-scan
+
+# Vérifier les permissions
+sudo setcap cap_net_raw+ep /usr/bin/ping
+```
+
+**B. Alternative avec nmap**
+
+```bash
+# Utiliser nmap au lieu de ping
+nmap -sn 192.168.1.0/24
+```
+
+**C. Vérification**
+
+```bash
+# Tester ping
+ping -c 1 8.8.8.8
+
+# Tester nmap
+nmap -sn 192.168.1.1
+```
+
+### **9. Fabricants non identifiés**
+
+#### **Symptômes :**
+
+```
+"manufacturer": "Unknown",
+"manufacturerInfo": { "identified": false }
+```
+
+#### **Causes :**
+
+- MAC address manquante
+- Fabricant non dans la base de données
+- Erreur dans l'identification
+
+#### **Solutions :**
+
+**A. Vérifier la base de données**
+
+```bash
+# Vérifier le fichier des fabricants
+cat server/data/manufacturers.json | head -20
+```
+
+**B. Ajouter un fabricant manuellement**
+
+```javascript
+// Dans server/data/manufacturers.json
+{
+    "AABBCC": "Mon Fabricant",
+    "112233": "Mon Appareil IoT"
+}
+```
+
+**C. Test d'identification**
+
+```bash
+# Tester l'identification d'une MAC
+node -e "
+const ManufacturerService = require('./manufacturer-service.js');
+const service = new ManufacturerService();
+const result = service.identifyManufacturer('48:e1:5c:aa:5c:15');
+console.log('Résultat:', result);
+"
+```
+
+### **10. Noms d'appareils non affichés dans le frontend**
+
+#### **Symptômes :**
+
+```
+# Dans le frontend, affichage des IPs au lieu des noms
+<h3>192.168.1.20</h3>  # Au lieu de "Samsung TV"
+```
+
+#### **Causes :**
+
+- Fonction `getDisplayName` non appelée
+- Données manquantes (hostname, manufacturer, deviceType)
+- Erreur dans la logique d'affichage
+
+#### **Solutions :**
+
+**A. Vérifier les données reçues**
+
+```javascript
+// Dans le frontend, vérifier les données
+console.log('🔍 Appareils reçus:', devices);
+```
+
+**B. Tester la fonction getDisplayName**
+
+```javascript
+// Dans DeviceList.js
+const getDisplayName = (device) => {
+    console.log('🔍 Device pour affichage:', device);
+    // ... logique d'affichage
+};
+```
+
+**C. Vérifier la priorité d'affichage**
+
+```javascript
+// Priorité : Bonjour hostname > manufacturer+type > manufacturer > type > IP
+if (device.hostname && device.hostname !== 'Unknown' && device.hostname !== device.ip) {
+    return device.hostname;
+}
+```
+
+## 🔧 **Tests de Diagnostic**
+
+### **Test Complet du Scanner**
+
+```bash
+# Test complet avec logs détaillés
+node -e "
+const ImprovedDeviceScanner = require('./improved-device-scanner.js');
+const scanner = new ImprovedDeviceScanner();
+
+console.log('🚀 Démarrage du test complet...');
+
+scanner.performImprovedScan('complete')
+    .then(devices => {
+        console.log('✅ Test réussi !');
+        console.log('📊 Résultats:');
+        devices.forEach(device => {
+            console.log(`- ${device.ip} -> ${device.hostname} (${device.manufacturer})`);
+        });
+        console.log(`Total: ${devices.length} appareils`);
+    })
+    .catch(err => {
+        console.error('❌ Erreur:', err.message);
+        console.error('Stack:', err.stack);
+    });
+"
+```
+
+### **Test des Services Bonjour**
+
+```bash
+# Tester les services Bonjour manuellement
+for service in _http._tcp _https._tcp _ssh._tcp; do
+    echo "🔍 Test du service: $service"
+    timeout 8 dns-sd -B $service local || echo "❌ Service $service non disponible"
+done
+
+# Test des timeouts API
+echo "🔍 Test des timeouts API..."
+curl -m 60 http://localhost:5001/api/devices/fast && echo "✅ API fast OK"
+curl -m 90 http://localhost:5001/api/devices/complete && echo "✅ API complete OK"
+```
+
+### **Test des Permissions Réseau**
+
+```bash
+# Vérifier les permissions des outils réseau
+echo "🔍 Vérification des permissions..."
+
+# Ping
+if ping -c 1 8.8.8.8 >/dev/null 2>&1; then
+    echo "✅ ping fonctionne"
+else
+    echo "❌ ping ne fonctionne pas"
+fi
+
+# ARP
+if arp -a >/dev/null 2>&1; then
+    echo "✅ arp fonctionne"
+else
+    echo "❌ arp ne fonctionne pas"
+fi
+
+# DNS-SD (macOS)
+if which dns-sd >/dev/null 2>&1; then
+    echo "✅ dns-sd disponible"
+else
+    echo "❌ dns-sd non disponible"
+fi
+
+# Nmap
+if which nmap >/dev/null 2>&1; then
+    echo "✅ nmap disponible"
+else
+    echo "❌ nmap non disponible"
+fi
+```
+
+## 📞 **Support**
+
+### **Logs Utiles**
+
+```bash
+# Logs du serveur
+tail -f server/logs/app.log
+
+# Logs d'erreur
+tail -f server/logs/error.log
+
+# Logs de sécurité
+tail -f server/logs/security.log
+```
+
+### **Commandes de Debug**
+
+```bash
+# État du réseau
+ifconfig
+netstat -rn
+
+# Processus en cours
+ps aux | grep node
+
+# Ports utilisés
+lsof -i :3000
+lsof -i :5001
+```
+
+### **Contact**
+
+- **Issues GitHub** : [Signaler un bug](https://github.com/magikcypress/bonjour-network/issues)
+- **Documentation** : [Wiki du projet](https://github.com/magikcypress/bonjour-network/wiki)
+- **Discussions** : [Forum communautaire](https://github.com/magikcypress/bonjour-network/discussions)
+
+---
+
+**💡 Conseil** : Commencez toujours par vérifier les logs du serveur pour identifier la cause exacte du problème avant d'essayer les solutions.

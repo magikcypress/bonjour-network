@@ -104,33 +104,18 @@ export const useDataManager = (activeTab = 'networks') => {
                     throw new Error('Serveur non accessible');
                 }
 
-                // Charger les données initiales via API REST
-                const [networksResponse, devicesResponse] = await Promise.all([
-                    apiService.getNetworks(),
-                    apiService.getDevices()
-                ]);
+                // Charger seulement les données de base (pas de scan automatique)
+                console.log('📊 Chargement des données de base (sans scan automatique)...');
 
-                console.log('📊 Réponses API:', {
-                    networks: networksResponse,
-                    devices: devicesResponse
-                });
-
-                // Log détaillé des appareils
-                if (devicesResponse && devicesResponse.length > 0) {
-                    console.log('📱 Appareils reçus dans useDataManager:');
-                    devicesResponse.forEach((device, index) => {
-                        console.log(`  ${index + 1}. ${device.ip}: manufacturer="${device.manufacturer}", deviceType="${device.deviceType}"`);
-                    });
-                }
-
+                // Initialiser avec des données vides
                 setData({
-                    networks: networksResponse || [],
-                    devices: devicesResponse || [],
-                    networkCount: networksResponse?.length || 0,
-                    deviceCount: devicesResponse?.length || 0
+                    networks: [],
+                    devices: [],
+                    networkCount: 0,
+                    deviceCount: 0
                 });
 
-                console.log('✅ Données initiales chargées via API REST');
+                console.log('✅ Application initialisée - Scans disponibles via boutons');
 
                 // Gestion des WebSockets selon la page active
                 console.log(`🔍 Page active détectée: ${activeTab}`);

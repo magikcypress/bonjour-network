@@ -236,10 +236,13 @@ function NetworkList({
                 <div className="text-center py-8">
                     <Wifi className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">Aucun réseau WiFi détecté</p>
+                    <p className="text-sm text-gray-500 mb-4">
+                        Cliquez sur "Scanner maintenant" pour découvrir les réseaux WiFi disponibles
+                    </p>
                     {connectivity.api && (
                         <button
                             onClick={handleManualScan}
-                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
                             Scanner Maintenant
                         </button>

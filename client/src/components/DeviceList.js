@@ -16,10 +16,10 @@ const SCAN_STEPS = {
         { id: 'dns', name: 'Résolution DNS', description: 'Résolution DNS inversée', icon: Wifi },
         { id: 'quick-ping', name: 'Mini-ping sweep', description: 'Découverte ciblée sur IPs typiques', icon: Search },
         { id: 'ping', name: 'Ping sweep', description: 'Découverte active sur 254 adresses', icon: Search },
-        { id: 'nmap', name: 'Scan nmap', description: 'Découverte avec nmap (si disponible)', icon: Search },
-        { id: 'arping', name: 'Scan arping', description: 'Découverte ARP active (si disponible)', icon: Search },
+        { id: 'nmap', name: 'Scan nmap', description: 'Découverte avec nmap', icon: Search },
+        { id: 'arping', name: 'Scan arping', description: 'Découverte ARP active', icon: Search },
         { id: 'bonjour', name: 'Scan Bonjour', description: 'Services réseau (HTTP, SSH, etc.)', icon: Monitor },
-        { id: 'mistral', name: 'Identification Mistral AI', description: 'Identification des fabricants', icon: Smartphone }
+        { id: 'manufacturer', name: 'Identification Fabricants', description: 'Identification des fabricants', icon: Smartphone }
     ]
 };
 
@@ -76,17 +76,35 @@ function DeviceList({
 
             // Log de débogage pour voir les appareils reçus
             console.log('🔍 Appareils reçus dans DeviceList:', devices);
-            if (devices && devices.length > 0) {
-                console.log('📱 Premier appareil dans DeviceList:', {
-                    ip: devices[0].ip,
-                    manufacturer: devices[0].manufacturer,
-                    deviceType: devices[0].deviceType,
-                    manufacturerInfo: devices[0].manufacturerInfo
-                });
-                console.log('🔍 Structure complète du premier appareil:', JSON.stringify(devices[0], null, 2));
-            }
 
-            return validateDevices(devices);
+            // Analyse détaillée des appareils
+            devices.forEach((device, index) => {
+                console.log(`📱 Appareil ${index + 1}:`, {
+                    ip: device.ip,
+                    mac: device.mac,
+                    hostname: device.hostname,
+                    manufacturer: device.manufacturer,
+                    deviceType: device.deviceType,
+                    manufacturerInfo: device.manufacturerInfo,
+                    source: device.source
+                });
+            });
+
+            const validated = validateDevices(devices);
+            console.log('✅ Appareils validés:', validated.length);
+
+            // Log des appareils après validation
+            validated.forEach((device, index) => {
+                console.log(`✅ Appareil validé ${index + 1}:`, {
+                    ip: device.ip,
+                    mac: device.mac,
+                    hostname: device.hostname,
+                    manufacturer: device.manufacturer,
+                    deviceType: device.deviceType
+                });
+            });
+
+            return validated;
         } catch (error) {
             console.error('❌ Erreur de validation des appareils:', error);
             return [];
@@ -247,6 +265,45 @@ function DeviceList({
 
         const diffDays = Math.floor(diffHours / 24);
         return `Il y a ${diffDays}j`;
+    };
+
+    const getDisplayName = (device) => {
+        // Log pour debug
+        console.log('🔍 getDisplayName - Appareil:', {
+            ip: device.ip,
+            hostname: device.hostname,
+            manufacturer: device.manufacturer,
+            deviceType: device.deviceType
+        });
+
+        // Priorité 1: Nom Bonjour valide (pas d'IP dans le nom)
+        if (device.hostname &&
+            device.hostname !== 'Unknown' &&
+            device.hostname !== device.ip &&
+            !device.hostname.includes(device.ip)) {
+            return device.hostname;
+        }
+
+        // Priorité 2: Nom du fabricant + type si disponible
+        if (device.manufacturer &&
+            device.manufacturer !== 'Unknown' &&
+            device.deviceType &&
+            device.deviceType !== 'Unknown') {
+            return `${device.manufacturer} ${device.deviceType}`;
+        }
+
+        // Priorité 3: Nom du fabricant seul
+        if (device.manufacturer && device.manufacturer !== 'Unknown') {
+            return device.manufacturer;
+        }
+
+        // Priorité 4: Type d'appareil
+        if (device.deviceType && device.deviceType !== 'Unknown') {
+            return device.deviceType;
+        }
+
+        // Fallback: IP
+        return device.ip;
     };
 
     const copyToClipboard = async (text) => {
@@ -421,10 +478,12 @@ function DeviceList({
                                     </div>
                                     <div>
                                         <h3 className="text-lg font-semibold text-gray-800">
-                                            {device.hostname || device.ip}
+                                            {getDisplayName(device)}
                                         </h3>
                                         <p className="text-sm text-gray-600">
-                                            {device.manufacturer || 'Fabricant inconnu'}
+                                            {device.manufacturer && device.manufacturer !== 'Unknown'
+                                                ? device.manufacturer
+                                                : 'Fabricant inconnu'}
                                         </p>
                                     </div>
                                 </div>
@@ -467,7 +526,11 @@ function DeviceList({
                                     </div>
                                     <div>
                                         <span className="font-medium">Type:</span>
-                                        <span className="ml-2 capitalize">{device.deviceType || 'Inconnu'}</span>
+                                        <span className="ml-2 capitalize">
+                                            {device.deviceType && device.deviceType !== 'Unknown'
+                                                ? device.deviceType
+                                                : 'Inconnu'}
+                                        </span>
                                     </div>
                                 </div>
 
@@ -502,16 +565,22 @@ function DeviceList({
                     <Wifi className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">Aucun appareil détecté</p>
                     <p className="text-sm text-gray-500 mb-4">
-                        Lancez un scan pour découvrir les appareils connectés au réseau
+                        Cliquez sur "Lancer un scan" pour découvrir les appareils connectés au réseau
                     </p>
-                    {currentConnectivity.socket && (
+                    <div className="flex justify-center space-x-4">
                         <button
                             onClick={() => handleStartScan('fast')}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
-                            Lancer un scan
+                            Scan Rapide
                         </button>
-                    )}
+                        <button
+                            onClick={() => handleStartScan('complete')}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                            Scan Complet
+                        </button>
+                    </div>
                 </div>
             )}
 

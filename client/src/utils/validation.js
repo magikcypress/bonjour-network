@@ -98,6 +98,12 @@ export function validateDevice(device) {
         return false;
     }
 
+    // Validation de l'IP
+    if (!validateIpAddress(device.ip)) {
+        console.warn('❌ Appareil rejeté - IP invalide:', device.ip);
+        return false;
+    }
+
     // Validation des champs de base
     const isValidIp = validateIpAddress(device.ip);
     const isValidMac = device.mac && device.mac !== 'N/A' ? validateMacAddress(device.mac) : true;
@@ -127,21 +133,34 @@ export function validateNetwork(network) {
 
     if (!hasAllFields) return false;
 
-    // Validation des champs individuels avec conversion des types
-    const isValidSsid = validateString(network.ssid, 32);
-    const isValidSignalStrength = validateNumber(parseInt(network.signalStrength), 0, 100); // Convertir en nombre
-    const isValidFrequency = validateNumber(parseInt(network.frequency), 0, 100000); // Convertir en nombre
-    const isValidSecurity = validateString(network.security, 20);
-    const isValidChannel = validateNumber(parseInt(network.channel), 1, 165); // Convertir en nombre
+    // Validation des champs individuels avec gestion des valeurs spéciales
+    const isValidSsid = validateString(network.ssid, 100); // Augmenter la limite pour les messages longs
 
-    // BSSID est optionnel et peut être null
-    const isValidBssid = !network.bssid || network.bssid === null || validateMacAddress(network.bssid);
+    // Accepter les valeurs spéciales pour signalStrength
+    const isValidSignalStrength = network.signalStrength === 'Connected' ||
+        network.signalStrength === null ||
+        validateNumber(parseInt(network.signalStrength), 0, 100);
 
-    // Accepter "Unknown" comme sécurité valide
-    const isAcceptableSecurity = network.security === 'Unknown' || isValidSecurity;
+    const isValidFrequency = validateNumber(parseInt(network.frequency), 0, 100000);
+
+    // Accepter les valeurs spéciales pour security
+    const isValidSecurity = validateString(network.security, 50) ||
+        network.security === 'Connected' ||
+        network.security === 'Unknown';
+
+    // Accepter les valeurs spéciales pour channel
+    const isValidChannel = network.channel === 'Current' ||
+        network.channel === null ||
+        validateNumber(parseInt(network.channel), 1, 165);
+
+    // BSSID est optionnel et peut être null ou "Connected"
+    const isValidBssid = !network.bssid ||
+        network.bssid === null ||
+        network.bssid === 'Connected' ||
+        validateMacAddress(network.bssid);
 
     return isValidSsid && isValidSignalStrength && isValidFrequency &&
-        isAcceptableSecurity && isValidChannel && isValidBssid;
+        isValidSecurity && isValidChannel && isValidBssid;
 }
 
 /**
@@ -157,8 +176,18 @@ export function sanitizeDevice(device) {
             return null;
         }
 
-        // MAC est optionnelle
-        const mac = device.mac && device.mac !== 'N/A' ? device.mac.toLowerCase() : 'N/A';
+        // MAC est optionnelle - accepter 'N/A' et les MAC partielles
+        let mac = 'N/A';
+        if (device.mac && device.mac !== 'N/A' && device.mac !== 'Unknown') {
+            // Normaliser la MAC (ajouter les deux-points si manquants)
+            const cleanMac = device.mac.replace(/[^0-9A-Fa-f]/g, '');
+            if (cleanMac.length === 12) {
+                mac = cleanMac.match(/.{1,2}/g).join(':').toLowerCase();
+            } else if (cleanMac.length >= 6) {
+                // MAC partielle (comme Shelly)
+                mac = cleanMac.match(/.{1,2}/g).join(':').toLowerCase();
+            }
+        }
 
         return {
             ip: device.ip,

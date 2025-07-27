@@ -11,8 +11,19 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 
 - **Scan rapide** : Détection en quelques secondes
 - **Scan complet** : Analyse approfondie avec identification des fabricants
-- **Détection multi-méthodes** : ARP, ping, nmap, Bonjour, DNS inversé
-- **Identification automatique** : Fabricants détectés via IA (Mistral AI)
+- **Détection multi-méthodes** : ARP, ping, nmap, Bonjour/mDNS, DNS inversé
+- **Identification automatique** : Fabricants détectés via base de données locale
+- **Découverte Bonjour** : Détection des appareils IoT (Shelly, Freebox, etc.)
+- **Noms d'appareils intelligents** : Affichage des noms au lieu des IPs
+
+### 📡 **Scan WiFi Avancé**
+
+- **Réseaux extérieurs** : Détection de tous les réseaux WiFi disponibles
+- **Informations complètes** : SSID, canal, fréquence, sécurité, qualité du signal
+- **Support macOS** : Utilisation de `system_profiler` pour un scan fiable
+- **Données réelles** : Plus de 30 réseaux détectés en moyenne
+- **Interface dédiée** : Page "Réseaux" avec liste complète des réseaux
+- **Mise à jour manuelle** : Scan à la demande via bouton "Scanner maintenant"
 
 ### 📊 **Interface Moderne**
 
@@ -20,6 +31,8 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 - **Temps réel** : Mises à jour en direct via WebSocket
 - **Progression visuelle** : Suivi en temps réel des scans
 - **Filtres avancés** : Recherche et tri des appareils
+- **Affichage intelligent** : Noms d'appareils, fabricants, types
+- **Pages séparées** : Appareils et Réseaux dans des onglets distincts
 
 ### 🔒 **Sécurité Renforcée**
 
@@ -27,6 +40,7 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 - **Authentification JWT** : Sessions sécurisées
 - **CORS configuré** : Protection contre les attaques
 - **Logs détaillés** : Traçabilité complète
+- **Parser de commandes sécurisé** : Gestion des guillemets et espaces
 
 ### 🚀 **Performance Optimisée**
 
@@ -34,6 +48,10 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 - **Communication WebSocket** : Mises à jour instantanées
 - **Cache intelligent** : Optimisation des requêtes
 - **Gestion d'erreurs** : Récupération automatique
+- **Support multi-plateforme** : macOS, Linux, Raspberry Pi
+- **Timeouts optimisés** : 60-90 secondes pour les scans complets
+- **Scan rapide** : 15-25 secondes, 15-20 appareils détectés
+- **Scan WiFi rapide** : 3-5 secondes, 30+ réseaux détectés
 
 ## 🛠️ Technologies
 
@@ -43,6 +61,8 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 - **Socket.IO** : Communication temps réel
 - **JWT** : Authentification sécurisée
 - **Command Validator** : Sécurité des commandes système
+- **Bonjour/mDNS** : Découverte de services réseau
+- **Manufacturer Database** : Identification des fabricants
 
 ### **Frontend**
 
@@ -50,16 +70,64 @@ Bonjour Network offre une **interface moderne et complète** pour gérer votre r
 - **Tailwind CSS** : Design responsive
 - **Socket.IO Client** : Connexion temps réel
 - **React Icons** : Icônes cohérentes
+- **Affichage intelligent** : Noms d'appareils prioritaires
 
 ### **Détection Réseau**
 
 - **ARP** : Table de routage locale
 - **Ping Sweep** : Découverte active
 - **Nmap** : Scan de ports (optionnel)
-- **Bonjour/mDNS** : Services réseau
+- **Bonjour/mDNS** : Services réseau (HTTP, HTTPS, SSH)
 - **DNS inversé** : Résolution d'hôtes
+- **Extraction MAC** : Détection des adresses MAC
+
+### **Scan WiFi**
+
+- **system_profiler** : Scan des réseaux WiFi (macOS)
+- **Informations complètes** : SSID, canal, fréquence, sécurité
+- **Qualité du signal** : Calcul automatique basé sur RSSI
+- **Support multi-bandes** : 2.4GHz, 5GHz, 6GHz
+- **Détection en temps réel** : Mise à jour à la demande
 
 ## 🚀 Installation Rapide
+
+### **Prérequis Système**
+
+#### **macOS**
+
+```bash
+# Outils réseau (déjà installés)
+# - dns-sd (Bonjour/mDNS)
+# - networksetup
+# - system_profiler (Scan WiFi)
+# - arp, ping, netstat
+
+# Vérifier les outils
+which dns-sd
+which networksetup
+which system_profiler
+
+# Test du scan WiFi
+system_profiler SPAirPortDataType | head -20
+```
+
+#### **Linux/Raspberry Pi**
+
+```bash
+# Installation des outils réseau
+sudo apt-get update
+sudo apt-get install -y nmap arp-scan iputils-ping
+
+# Pour Bonjour/mDNS (optionnel)
+sudo apt-get install -y avahi-daemon
+```
+
+#### **Windows (WSL)**
+
+```bash
+# Utiliser les outils Linux via WSL
+# Voir la documentation Linux ci-dessus
+```
 
 ### **Option 1 : Docker (Recommandé)**
 
@@ -103,6 +171,9 @@ curl -fsSL https://raw.githubusercontent.com/magikcypress/bonjour-network/main/s
 - **[Raspberry Pi](docs/RASPBERRY_PI.md)** : Installation sur Pi
 - **[Sécurité](SECURITY.md)** : Mesures de sécurité
 - **[Dépannage](docs/TROUBLESHOOTING.md)** : Guide de résolution
+- **[Améliorations Scanner](docs/SCANNER_IMPROVEMENTS.md)** : Nouvelles fonctionnalités
+- **[API Endpoints](docs/API_ENDPOINTS_IMPROVED.md)** : Documentation API complète
+- **[Scan WiFi](docs/WIFI_SCANNING.md)** : Guide complet du scan WiFi
 
 ## 🔧 Configuration
 
@@ -123,14 +194,26 @@ REACT_APP_WS_URL=ws://localhost:5001
 
 L'application nécessite des **permissions réseau** pour scanner votre réseau :
 
+#### **macOS**
+
 ```bash
-# macOS
+# Permissions pour les outils réseau
 sudo chmod +s /usr/bin/ping
 sudo chmod +s /usr/bin/arp
 
-# Linux
+# Vérifier les interfaces réseau
+networksetup -listallnetworkservices
+```
+
+#### **Linux/Raspberry Pi**
+
+```bash
+# Permissions pour les outils réseau
 sudo setcap cap_net_raw+ep /usr/bin/ping
 sudo setcap cap_net_raw+ep /usr/bin/arp
+
+# Pour nmap (optionnel)
+sudo setcap cap_net_raw+ep /usr/bin/nmap
 ```
 
 ## 🎯 Utilisation
@@ -154,12 +237,14 @@ npm start
 
 - **Scan Rapide** : Détection en quelques secondes
 - **Scan Complet** : Analyse approfondie avec identification
+- **Découverte Bonjour** : Détection automatique des appareils IoT
 
 ### **4. Surveiller le Réseau**
 
 - **Temps réel** : Mises à jour automatiques
 - **Historique** : Logs détaillés
 - **Alertes** : Notifications d'événements
+- **Noms intelligents** : Affichage des noms d'appareils
 
 ## 🔍 API Endpoints
 
@@ -176,6 +261,8 @@ GET  /api/networks/status   # Statut du scan
 ```bash
 GET  /api/devices           # Liste des appareils
 POST /api/devices/scan      # Scanner les appareils
+GET  /api/devices/fast      # Scan rapide
+GET  /api/devices/complete  # Scan complet
 GET  /api/devices/:id       # Détails d'un appareil
 ```
 
@@ -267,6 +354,8 @@ sudo systemctl start bonjour-network
 - ✅ **CORS configuré** : Protection contre les attaques
 - ✅ **Logs de sécurité** : Traçabilité complète
 - ✅ **Permissions minimales** : Principe du moindre privilège
+- ✅ **Parser sécurisé** : Gestion des guillemets et espaces
+- ✅ **Validation des interfaces** : Noms d'interfaces sécurisés
 
 ### **Bonnes Pratiques**
 

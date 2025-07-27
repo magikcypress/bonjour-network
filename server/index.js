@@ -199,31 +199,49 @@ app.get('/api/networks', async (req, res) => {
         logger.info(`Scan WiFi demandé par IP: ${req.ip}`);
         let networks;
 
-        // Scanner les VRAIS réseaux WiFi extérieurs
+        // Scanner les réseaux WiFi extérieurs
         try {
-            const RealNoSudoWiFiScanner = require('./real-no-sudo-scanner');
-            const scanner = new RealNoSudoWiFiScanner();
+            const WifiSystemProfilerScanner = require('./utils/wifi-system-profiler');
+            const scanner = new WifiSystemProfilerScanner();
 
-            // Scanner les vrais réseaux WiFi
-            networks = await scanner.scanNetworks();
+            // Scanner les réseaux WiFi extérieurs
+            const externalNetworks = await scanner.scanNetworks();
 
-            // Formater les réseaux pour correspondre au format attendu
-            networks = networks.map(network => ({
-                ssid: network.ssid || 'Réseau caché',
-                bssid: network.bssid || 'N/A',
-                mode: 'infrastructure',
-                channel: network.channel || 1,
-                frequency: network.frequency || 2412,
-                signal_level: network.rssi || -70,
-                signalStrength: network.signalStrength || 30, // Ajouté pour la validation
-                quality: network.signalStrength || 30,
-                security: network.security || 'WPA2',
-                security_flags: [network.security || 'WPA2-PSK-CCMP']
-            }));
+            if (externalNetworks && externalNetworks.length > 0) {
+                // Formater les réseaux pour correspondre au format attendu
+                networks = externalNetworks.map(network => ({
+                    ssid: network.ssid,
+                    bssid: network.bssid || 'Unknown',
+                    mode: 'infrastructure',
+                    channel: network.channel || 'Unknown',
+                    frequency: network.frequency || 2412,
+                    signal_level: network.rssi || 'Unknown',
+                    signalStrength: network.quality || 50,
+                    quality: network.quality || 50,
+                    security: network.security || 'Unknown',
+                    security_flags: [network.security || 'Unknown']
+                }));
 
-            logger.info(`Scan WiFi RÉEL: ${networks.length} réseaux détectés`);
-        } catch (realScanError) {
-            logger.warn('Erreur lors du scan WiFi:', realScanError.message);
+                logger.info(`Scan WiFi: ${networks.length} réseaux extérieurs détectés`);
+            } else {
+                // Fallback: réseau actuel avec message explicatif
+                networks = [{
+                    ssid: 'Réseau WiFi Actuel (Apple limite l\'accès)',
+                    bssid: 'Connected',
+                    mode: 'infrastructure',
+                    channel: 'Current',
+                    frequency: 2412,
+                    signal_level: 'Connected',
+                    signalStrength: 'Connected',
+                    quality: 'Connected',
+                    security: 'Connected',
+                    security_flags: ['Connected']
+                }];
+
+                logger.info('Scan WiFi: Aucun réseau externe détecté, affichage du réseau actuel');
+            }
+        } catch (error) {
+            logger.error('Erreur lors du scan WiFi:', error);
             networks = [];
         }
 

@@ -13,6 +13,7 @@ class CommandValidator {
 
         // Commandes WiFi macOS
         'airport', 'system_profiler', 'networksetup', 'wdutil', 'route',
+        '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport',
 
         // Commandes WiFi Linux/Raspberry Pi
         'iwlist', 'nmcli', 'iw', 'iwconfig',
@@ -43,7 +44,7 @@ class CommandValidator {
         'scutil': ['--nwi'],
         'route': ['-n', 'get', '1.1.1.1'],
         'which': ['nmap', 'arping', 'arp-scan', 'iwlist', 'nmcli', 'iw'],
-        'perl': ['-e'],
+        'perl': ['-e', 'alarm'],
         'wdutil': ['info'],
         // Commandes Linux/Raspberry Pi
         'iwlist': ['scan', 'wlan0', 'eth0'],
@@ -58,6 +59,50 @@ class CommandValidator {
     };
 
     /**
+     * Parse une commande en gérant les guillemets
+     * @param {string} command - La commande à parser
+     * @returns {Array} - Tableau des parties de la commande
+     */
+    static parseCommand(command) {
+        const parts = [];
+        let current = '';
+        let inQuotes = false;
+        let quoteChar = '';
+
+        for (let i = 0; i < command.length; i++) {
+            const char = command[i];
+
+            if ((char === '"' || char === "'") && !inQuotes) {
+                inQuotes = true;
+                quoteChar = char;
+                continue;
+            }
+
+            if (char === quoteChar && inQuotes) {
+                inQuotes = false;
+                quoteChar = '';
+                continue;
+            }
+
+            if (char === ' ' && !inQuotes) {
+                if (current.trim()) {
+                    parts.push(current.trim());
+                    current = '';
+                }
+                continue;
+            }
+
+            current += char;
+        }
+
+        if (current.trim()) {
+            parts.push(current.trim());
+        }
+
+        return parts;
+    }
+
+    /**
      * Valide une commande système
      * @param {string} command - La commande à valider
      * @returns {boolean} - True si la commande est autorisée
@@ -67,8 +112,8 @@ class CommandValidator {
             return false;
         }
 
-        // Nettoyer et parser la commande
-        const parts = command.trim().split(/\s+/);
+        // Nettoyer et parser la commande en gérant les guillemets
+        const parts = this.parseCommand(command.trim());
         const baseCommand = parts[0];
 
         // Vérifier si la commande de base est autorisée
@@ -83,9 +128,14 @@ class CommandValidator {
             const validParams = this.allowedParams[baseCommand];
 
             for (const param of params) {
+                // Nettoyer les guillemets pour la validation
+                const cleanParam = param.replace(/^["']|["']$/g, '');
+
                 if (!validParams.includes(param) &&
+                    !validParams.includes(cleanParam) &&
                     !this.isValidIpOrMac(param) &&
-                    !(baseCommand === 'networksetup' && this.isValidNetworkService(param))) {
+                    !this.isValidIpOrMac(cleanParam) &&
+                    !(baseCommand === 'networksetup' && this.isValidNetworkService(cleanParam))) {
                     console.warn(`🚫 Paramètre non autorisé pour ${baseCommand}: ${param}`);
                     return false;
                 }
@@ -135,12 +185,25 @@ class CommandValidator {
         }
 
         // Noms de services autorisés pour networksetup
-        const allowedServices = ['Wi-Fi', 'AirPort', 'Ethernet', 'Thunderbolt Ethernet'];
+        const allowedServices = ['Wi-Fi', 'AirPort', 'Ethernet', 'Thunderbolt Ethernet', 'Thunderbolt Bridge', 'iPhone USB', 'Tailscale'];
 
         // Vérifier si le service est dans la liste autorisée
-        return allowedServices.some(service =>
+        if (allowedServices.some(service =>
             serviceName.includes(service) || serviceName === service
-        );
+        )) {
+            return true;
+        }
+
+        // Accepter les noms d'interfaces qui ressemblent à des adaptateurs réseau
+        // (comme AX88179A pour les adaptateurs USB Ethernet)
+        const networkAdapterPatterns = [
+            /^[A-Z]{2}\d{5}[A-Z]?$/, // Pattern comme AX88179A
+            /^[A-Z]{2,4}\d{3,4}[A-Z]?$/, // Pattern général pour adaptateurs
+            /^USB.*Ethernet$/i,
+            /^Ethernet.*Adapter$/i
+        ];
+
+        return networkAdapterPatterns.some(pattern => pattern.test(serviceName));
     }
 
     /**

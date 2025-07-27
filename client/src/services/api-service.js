@@ -4,7 +4,7 @@ class ApiService {
     constructor() {
         // Forcer l'utilisation de localhost pour éviter les problèmes CORS
         this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-        this.timeout = 15000;
+        this.timeout = 60000; // Augmenter le timeout par défaut à 60 secondes
         this.retryAttempts = 3;
         this.retryDelay = 1000;
 
@@ -153,7 +153,7 @@ class ApiService {
             const response = await this.makeRequest({
                 method: 'GET',
                 url: '/devices/fast',
-                timeout: 15000
+                timeout: 60000 // Augmenter le timeout à 60 secondes pour le scan complet
             });
             return this.validateDevices(response.data);
         } catch (error) {
@@ -168,7 +168,7 @@ class ApiService {
             const response = await this.makeRequest({
                 method: 'GET',
                 url: '/devices/complete',
-                timeout: 30000
+                timeout: 90000 // Augmenter le timeout à 90 secondes pour le scan complet
             });
             return this.validateDevices(response.data);
         } catch (error) {

@@ -1,8 +1,8 @@
 # 🔌 API Endpoints - Bonjour Network
 
-## 📊 **Endpoints Principaux (Scanner Amélioré)**
+## 📊 **Endpoints Principaux**
 
-### **1. Scan Rapide**
+### **1. Scan des Appareils Rapide**
 
 ```http
 GET /api/devices/fast
@@ -11,7 +11,7 @@ GET /api/devices/fast
 **Description** : Scan rapide avec le scanner amélioré pour une meilleure cohérence
 **Réponse** : Liste d'appareils avec identification fabricant et score qualité
 
-### **2. Scan Complet**
+### **2. Scan des Appareils Complet**
 
 ```http
 GET /api/devices/complete
@@ -20,7 +20,7 @@ GET /api/devices/complete
 **Description** : Scan complet avec le scanner amélioré
 **Réponse** : Liste complète d'appareils avec toutes les informations
 
-### **3. Scan Par Défaut**
+### **3. Scan des Appareils Par Défaut**
 
 ```http
 GET /api/devices
@@ -28,6 +28,46 @@ GET /api/devices
 
 **Description** : Scan complet par défaut (utilise le scanner amélioré)
 **Réponse** : Même que scan complet
+
+### **4. Scan des Réseaux WiFi**
+
+```http
+GET /api/networks
+```
+
+**Description** : Scan des réseaux WiFi extérieurs disponibles
+**Réponse** : Liste des réseaux WiFi avec informations complètes
+
+**Exemple de réponse** :
+
+```json
+[
+  {
+    "ssid": "Freebox-5FFE9F",
+    "bssid": "Unknown",
+    "mode": "infrastructure",
+    "channel": "85",
+    "frequency": 5425,
+    "signal_level": "-67",
+    "signalStrength": 60,
+    "quality": 60,
+    "security": "WPA3 Personal",
+    "security_flags": ["WPA3 Personal"]
+  },
+  {
+    "ssid": "DEUS-EX-INVITE",
+    "bssid": "Unknown",
+    "mode": "infrastructure",
+    "channel": "108",
+    "frequency": 5540,
+    "signal_level": "Unknown",
+    "signalStrength": 50,
+    "quality": 50,
+    "security": "WPA2 Personal",
+    "security_flags": ["WPA2 Personal"]
+  }
+]
+```
 
 ## 🎯 **Endpoints Avancés**
 

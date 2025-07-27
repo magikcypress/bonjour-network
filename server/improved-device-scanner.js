@@ -246,6 +246,8 @@ class ImprovedDeviceScanner {
                 console.warn(`⚠️ Timeout Bonjour (normal): ${error.message}`);
                 this.emitProgress('bonjour', 'warning', `Bonjour timeout (normal) - ${error.message}`);
             }
+
+
         }
 
         let devices = Array.from(allDevices.values());
@@ -254,6 +256,10 @@ class ImprovedDeviceScanner {
         // Enrichir avec les MAC depuis ARP pour les appareils sans MAC
         devices = await this.enrichDevicesWithArp(devices);
         console.log(`📊 Après enrichissement ARP: ${devices.length} appareils`);
+
+        // Enrichir avec les noms Bonjour pour les appareils sans nom
+        devices = await this.enrichDevicesWithBonjour(devices);
+        console.log(`📊 Après enrichissement Bonjour: ${devices.length} appareils`);
 
         // Filtrer et valider les appareils
         devices = this.validateAndFilterDevices(devices);
@@ -561,40 +567,73 @@ class ImprovedDeviceScanner {
 
             console.log(`🎯 Scan Bonjour sur ${services.length} services...`);
 
-            // Scanner les services en parallèle avec timeout individuel
-            const servicePromises = services.map(async (service) => {
+            // Scanner les services séquentiellement avec timeout
+            const allDevices = [];
+            for (const service of services) {
                 try {
-                    // Timeout de 3 secondes par service avec perl
+                    console.log(`🔍 Scan du service ${service}...`);
+
+                    // Utiliser un processus enfant avec timeout
+                    const { spawn } = require('child_process');
+                    const dnsSd = spawn('dns-sd', ['-B', service, 'local']);
+
+                    let output = '';
+                    let timeoutId;
+
                     const result = await Promise.race([
-                        CommandValidator.safeExec(`perl -e 'alarm 3; exec @ARGV' "dns-sd" "-B" "${service}" "local" 2>/dev/null`),
+                        new Promise((resolve, reject) => {
+                            timeoutId = setTimeout(() => {
+                                dnsSd.kill();
+                                // Si on a des données, on les utilise même avec timeout
+                                if (output.trim()) {
+                                    resolve(output);
+                                } else {
+                                    reject(new Error(`${service} timeout`));
+                                }
+                            }, 8000); // Augmenter le timeout à 8 secondes
+
+                            dnsSd.stdout.on('data', (data) => {
+                                output += data.toString();
+                                // Si on a des lignes avec "Add", on peut résoudre plus tôt
+                                if (output.includes('Add') && output.split('\n').filter(line => line.includes('Add')).length >= 3) {
+                                    clearTimeout(timeoutId);
+                                    dnsSd.kill();
+                                    resolve(output);
+                                }
+                            });
+
+                            dnsSd.stderr.on('data', (data) => {
+                                console.log(`⚠️ dns-sd stderr: ${data}`);
+                            });
+
+                            dnsSd.on('close', (code) => {
+                                clearTimeout(timeoutId);
+                                if (output.trim()) {
+                                    resolve(output);
+                                } else {
+                                    reject(new Error(`dns-sd exited with code ${code}`));
+                                }
+                            });
+                        }),
                         new Promise((_, reject) =>
-                            setTimeout(() => reject(new Error(`${service} timeout`)), 3000)
+                            setTimeout(() => {
+                                dnsSd.kill();
+                                reject(new Error(`${service} timeout`));
+                            }, 8000) // Augmenter le timeout à 8 secondes
                         )
                     ]);
 
-                    if (result.success) {
-                        const bonjourDevices = this.parseBonjourOutput(result.stdout, service);
-                        console.log(`✅ Service ${service}: ${bonjourDevices.length} appareils`);
-                        return bonjourDevices;
-                    }
-                    return [];
+                    const bonjourDevices = this.parseBonjourOutput(result, service);
+                    console.log(`✅ Service ${service}: ${bonjourDevices.length} appareils`);
+                    allDevices.push(...bonjourDevices);
+
                 } catch (error) {
                     console.log(`⚠️ Service ${service} non disponible: ${error.message}`);
-                    return [];
-                }
-            });
-
-            // Attendre tous les services avec timeout global
-            const results = await Promise.allSettled(servicePromises);
-
-            for (const result of results) {
-                if (result.status === 'fulfilled') {
-                    devices.push(...result.value);
                 }
             }
 
-            console.log(`🎯 Scan Bonjour terminé: ${devices.length} appareils découverts`);
-            return devices;
+            console.log(`🎯 Scan Bonjour terminé: ${allDevices.length} appareils découverts`);
+            return allDevices;
         } catch (error) {
             console.error('Erreur scan Bonjour amélioré:', error);
             return [];
@@ -607,22 +646,68 @@ class ImprovedDeviceScanner {
 
         for (const line of lines) {
             if (line.includes('Add') && line.includes('_tcp')) {
-                const match = line.match(/Add\s+([^\s]+)\s+([^\s]+)\s+([^\s]+)/);
+                // Format: "16:52:45.348  Add        3  11 local.               _http._tcp.          Freebox Server"
+                // Regex simple pour capturer le service et le nom
+                let match = line.match(/Add\s+\d+\s+\d+\s+\d+\s+local\.\s+_([^\.]+)\._tcp\.\s+(.+)/);
+                if (!match) {
+                    // Essayer un regex encore plus simple
+                    match = line.match(/_([^\.]+)\._tcp\.\s+(.+)/);
+                }
                 if (match) {
-                    const hostname = match[1];
-                    const ip = match[2];
+                    const serviceType = match[1];
+                    const deviceName = match[2].trim();
 
-                    if (this.isValidIp(ip)) {
-                        devices.push({
-                            ip: ip,
-                            mac: 'N/A',
-                            hostname: hostname,
-                            deviceType: service.replace('_', '').replace('._tcp', ''),
-                            lastSeen: new Date().toISOString(),
-                            isActive: true,
-                            source: 'bonjour'
-                        });
+                    // Essayer d'extraire l'IP depuis le nom ou utiliser une IP par défaut
+                    // Les appareils Bonjour peuvent avoir l'IP dans leur nom
+                    let ip = 'Unknown';
+                    const ipMatch = deviceName.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+                    if (ipMatch) {
+                        ip = ipMatch[1];
                     }
+
+                    // Essayer d'extraire la MAC depuis le nom
+                    let mac = 'N/A';
+                    // Regex pour MAC complète (6 octets)
+                    let macMatch = deviceName.match(/([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})/);
+                    if (macMatch) {
+                        mac = macMatch[0].toLowerCase();
+                    } else {
+                        // Regex pour MAC partielle (comme dans les noms Shelly)
+                        macMatch = deviceName.match(/([0-9A-Fa-f]{2}){3,6}/);
+                        if (macMatch) {
+                            const macStr = macMatch[0];
+                            // Formater en MAC standard
+                            const formattedMac = macStr.match(/.{2}/g).join(':').toLowerCase();
+                            mac = formattedMac;
+                        }
+                    }
+
+                    // Déterminer le type d'appareil basé sur le nom
+                    let deviceType = 'Unknown';
+                    if (deviceName.toLowerCase().includes('shelly')) {
+                        deviceType = 'IoT Device';
+                    } else if (deviceName.toLowerCase().includes('freebox')) {
+                        deviceType = 'Router/Gateway';
+                    } else if (deviceName.toLowerCase().includes('server')) {
+                        deviceType = 'Server';
+                    } else if (deviceName.toLowerCase().includes('bulb')) {
+                        deviceType = 'Smart Light';
+                    } else if (deviceName.toLowerCase().includes('plug')) {
+                        deviceType = 'Smart Plug';
+                    }
+
+                    const device = {
+                        ip: ip,
+                        mac: mac,
+                        hostname: deviceName,
+                        deviceType: deviceType,
+                        lastSeen: new Date().toISOString(),
+                        isActive: true,
+                        source: 'bonjour',
+                        serviceType: serviceType
+                    };
+
+                    devices.push(device);
                 }
             }
         }
@@ -676,8 +761,8 @@ class ImprovedDeviceScanner {
         console.log(`🔍 Validation et filtrage de ${devices.length} appareils...`);
 
         const filteredDevices = devices.filter(device => {
-            // Validation IP de base
-            if (!device.ip || !this.isValidIp(device.ip)) {
+            // Validation IP de base - accepter les appareils Bonjour même sans IP
+            if (!device.ip || (!this.isValidIp(device.ip) && device.source !== 'bonjour')) {
                 console.log(`🚫 Appareil rejeté - IP invalide: ${device.ip}`);
                 return false;
             }
@@ -685,12 +770,11 @@ class ImprovedDeviceScanner {
             // Filtrage intelligent des IPs réservées
             const ip = device.ip;
 
-            // IPs vraiment invalides
+            // IPs vraiment invalides seulement
             if (ip === '127.0.0.1' || // Loopback
                 ip.startsWith('169.254') || // Link-local
                 ip.startsWith('224.') || // Multicast
-                ip.startsWith('255.') || // Broadcast
-                ip.startsWith('0.')) { // Réservé
+                ip === '255.255.255.255') { // Broadcast global
                 console.log(`🚫 Appareil rejeté - IP réservée: ${ip}`);
                 return false;
             }
@@ -735,12 +819,17 @@ class ImprovedDeviceScanner {
         let mergedDevices = 0;
 
         for (const device of devices) {
-            if (!device.ip || !this.isValidIp(device.ip)) {
+            // Accepter les appareils Bonjour même sans IP
+            if (!device.ip || (!this.isValidIp(device.ip) && device.source !== 'bonjour')) {
                 console.log(`⚠️ Appareil ignoré - IP invalide: ${device.ip}`);
                 continue;
             }
 
-            const key = device.ip;
+            // Utiliser la MAC comme clé pour les appareils Bonjour sans IP
+            const key = device.source === 'bonjour' && (!device.ip || device.ip === 'Unknown')
+                ? device.mac
+                : device.ip;
+
             if (!deviceMap.has(key)) {
                 // Nouvel appareil
                 deviceMap.set(key, {
@@ -749,14 +838,14 @@ class ImprovedDeviceScanner {
                     lastSeen: new Date().toISOString()
                 });
                 newDevices++;
-                console.log(`➕ Nouvel appareil ajouté: ${device.ip} (${device.source})`);
+                console.log(`➕ Nouvel appareil ajouté: ${device.source === 'bonjour' ? device.hostname : device.ip} (${device.source})`);
             } else {
                 // Fusion intelligente des informations
                 const existing = deviceMap.get(key);
                 const merged = this.mergeDeviceInfo(existing, device);
                 deviceMap.set(key, merged);
                 mergedDevices++;
-                console.log(`🔄 Appareil fusionné: ${device.ip} (${device.source} + ${existing.source})`);
+                console.log(`🔄 Appareil fusionné: ${device.source === 'bonjour' ? device.hostname : device.ip} (${device.source} + ${existing.source})`);
             }
         }
 
@@ -857,6 +946,55 @@ class ImprovedDeviceScanner {
             return enrichedDevices;
         } catch (error) {
             console.error('❌ Erreur lors de l\'enrichissement ARP:', error);
+            return devices;
+        }
+    }
+
+    async enrichDevicesWithBonjour(devices) {
+        console.log(`🔍 Enrichissement Bonjour pour ${devices.length} appareils...`);
+
+        try {
+            // Récupérer tous les appareils Bonjour
+            const bonjourDevices = await this.improvedBonjourScan();
+            const bonjourMap = new Map();
+
+            // Créer une map des appareils Bonjour par MAC et par nom
+            bonjourDevices.forEach(device => {
+                if (device.mac && device.mac !== 'N/A') {
+                    bonjourMap.set(device.mac.toLowerCase(), device);
+                }
+                if (device.hostname && device.hostname !== 'Unknown') {
+                    // Extraire la MAC du nom si présente
+                    const macMatch = device.hostname.match(/([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})/i);
+                    if (macMatch) {
+                        const extractedMac = macMatch[0].toLowerCase();
+                        bonjourMap.set(extractedMac, device);
+                    }
+                }
+            });
+
+            let enrichedCount = 0;
+            const enrichedDevices = devices.map(device => {
+                if (device.mac && device.mac !== 'N/A') {
+                    const bonjourDevice = bonjourMap.get(device.mac.toLowerCase());
+                    if (bonjourDevice && bonjourDevice.hostname && bonjourDevice.hostname !== 'Unknown') {
+                        console.log(`✅ Nom Bonjour ajouté pour ${device.ip}: ${bonjourDevice.hostname}`);
+                        enrichedCount++;
+                        return {
+                            ...device,
+                            hostname: bonjourDevice.hostname,
+                            deviceType: bonjourDevice.deviceType || device.deviceType,
+                            serviceType: bonjourDevice.serviceType
+                        };
+                    }
+                }
+                return device;
+            });
+
+            console.log(`✅ ${enrichedCount} appareils enrichis avec des noms Bonjour`);
+            return enrichedDevices;
+        } catch (error) {
+            console.error('❌ Erreur lors de l\'enrichissement Bonjour:', error);
             return devices;
         }
     }
@@ -1122,11 +1260,21 @@ class ImprovedDeviceScanner {
         }
     }
 
-    // Scan avec arping
+    // Scan avec arping (ou nmap sur macOS)
     async scanWithArping() {
         try {
             if (!this.networkRange) {
                 throw new Error('Plage réseau non disponible');
+            }
+
+            // Détecter le système d'exploitation
+            const os = require('os');
+            const platform = os.platform();
+
+            if (platform === 'darwin') {
+                // Sur macOS, utiliser nmap au lieu d'arping
+                console.log('🍎 macOS détecté - utilisation de nmap au lieu d\'arping');
+                return await this.scanWithNmap();
             }
 
             const devices = [];
