@@ -12,7 +12,6 @@ class EnvironmentValidator {
     // Variables d'environnement optionnelles avec valeurs par défaut
     static optionalVars = {
         'MISTRAL_AI_URL': 'https://api.mistral.ai',
-        'MISTRAL_AI_KEY': null, // Requis si utilisé
         'JWT_SECRET': null, // Requis si authentification activée
         'WIFI_SCAN_INTERVAL': '30000',
         'DEVICE_SCAN_INTERVAL': '60000',
@@ -37,9 +36,7 @@ class EnvironmentValidator {
                 return false;
             }
         },
-        'MISTRAL_AI_KEY': (value) => {
-            return value && value.length >= 32;
-        },
+
         'JWT_SECRET': (value) => {
             return value && value.length >= 32;
         },
@@ -138,9 +135,7 @@ class EnvironmentValidator {
                 warnings.push('JWT_SECRET utilise la valeur par défaut - à changer en production');
             }
 
-            if (config.MISTRAL_AI_KEY === 'your-mistral-api-key-here') {
-                warnings.push('MISTRAL_AI_KEY utilise la valeur par défaut - à configurer');
-            }
+
         }
 
         // Vérifier les secrets en production
@@ -149,9 +144,7 @@ class EnvironmentValidator {
                 errors.push('JWT_SECRET doit être défini et avoir au moins 32 caractères en production');
             }
 
-            if (!config.MISTRAL_AI_KEY || config.MISTRAL_AI_KEY.length < 32) {
-                errors.push('MISTRAL_AI_KEY doit être défini et avoir au moins 32 caractères en production');
-            }
+
 
             if (config.PORT < 1024) {
                 warnings.push('Port inférieur à 1024 en production - vérifier les permissions');
@@ -182,7 +175,7 @@ class EnvironmentValidator {
             NODE_ENV: 'production',
             PORT: '5001',
             MISTRAL_AI_URL: 'https://api.mistral.ai',
-            MISTRAL_AI_KEY: 'your-actual-mistral-api-key-here',
+
             JWT_SECRET: 'your-super-secure-256-bit-jwt-secret-here',
             WIFI_SCAN_INTERVAL: '30000',
             DEVICE_SCAN_INTERVAL: '60000',
