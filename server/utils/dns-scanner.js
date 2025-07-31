@@ -327,6 +327,14 @@ class DnsScanner {
      */
     async scanBonjourServices() {
         try {
+            // Vérifier si dns-sd est disponible
+            try {
+                await execAsync('which dns-sd');
+            } catch (error) {
+                console.log('⚠️ dns-sd non disponible sur ce système, skip du scan Bonjour');
+                return [];
+            }
+
             const services = ['_http._tcp', '_https._tcp', '_ssh._tcp', '_ftp._tcp'];
             const results = [];
 

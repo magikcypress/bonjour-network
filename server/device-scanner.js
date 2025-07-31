@@ -233,6 +233,14 @@ class DeviceScanner {
 
     async scanWithBonjour() {
         try {
+            // Vérifier si dns-sd est disponible
+            try {
+                await execAsync('which dns-sd');
+            } catch (error) {
+                console.log('⚠️ dns-sd non disponible sur ce système, skip du scan Bonjour');
+                return [];
+            }
+
             const { stdout } = await execAsync('dns-sd -B _services._dns-sd._udp local');
             const devices = [];
 

@@ -558,6 +558,19 @@ class ImprovedDeviceScanner {
 
     async improvedBonjourScan() {
         try {
+            // Vérifier si dns-sd est disponible
+            const { exec } = require('child_process');
+            const { promisify } = require('util');
+            const execAsync = promisify(exec);
+
+            try {
+                await execAsync('which dns-sd');
+            } catch (error) {
+                console.log('⚠️ dns-sd non disponible sur ce système, skip du scan Bonjour');
+                this.emitProgress('bonjour', 'skip', 'dns-sd non disponible', null, 'skip');
+                return [];
+            }
+
             // Services les plus courants seulement pour éviter les timeouts
             const services = ['_http._tcp', '_https._tcp', '_ssh._tcp'];
 
