@@ -161,7 +161,7 @@ static parseCommand(command) {
         }
         
         current += char;
-    }
+        }
     
     if (current.trim()) {
         parts.push(current.trim());
