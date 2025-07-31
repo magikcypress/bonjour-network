@@ -18,6 +18,14 @@ class WifiSystemProfilerScanner {
                 return [];
             }
 
+            // Vérifier si system_profiler est disponible
+            try {
+                await execAsync('which system_profiler');
+            } catch (error) {
+                console.log('⚠️ system_profiler non disponible sur ce système');
+                return [];
+            }
+
             console.log('🔍 Scan des réseaux WiFi avec system_profiler...');
 
             const { stdout } = await execAsync('system_profiler SPAirPortDataType', { timeout: 15000 });

@@ -146,6 +146,14 @@ class WifiScannerExtended {
      */
     async scanWithSystemProfiler() {
         try {
+            // Vérifier si system_profiler est disponible
+            try {
+                await execAsync('which system_profiler');
+            } catch (error) {
+                console.log('⚠️ system_profiler non disponible sur ce système');
+                return [];
+            }
+
             const { stdout } = await execAsync('system_profiler SPAirPortDataType -xml', { timeout: 15000 });
 
             if (!stdout || stdout.trim() === '') {

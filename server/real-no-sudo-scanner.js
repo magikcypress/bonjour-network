@@ -133,6 +133,14 @@ class RealNoSudoWiFiScanner {
 
     async scanWithSystemProfiler() {
         try {
+            // Vérifier si system_profiler est disponible
+            try {
+                await execAsync('which system_profiler');
+            } catch (error) {
+                console.log('⚠️ system_profiler non disponible sur ce système');
+                return [];
+            }
+
             // Utiliser system_profiler pour obtenir les informations WiFi sur macOS
             const result = await CommandValidator.safeExec('system_profiler SPAirPortDataType');
             if (!result.success) {
