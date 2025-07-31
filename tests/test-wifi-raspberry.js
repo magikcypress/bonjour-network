@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const RealNoSudoWiFiScanner = require('./server/real-no-sudo-scanner');
-const OSDetector = require('./server/utils/os-detector');
+const RealNoSudoWiFiScanner = require('../server/real-no-sudo-scanner');
+const OSDetector = require('../server/utils/os-detector');
 
 async function testWifiScan() {
     console.log('🧪 Test du scan WiFi sur Raspberry Pi...\n');
