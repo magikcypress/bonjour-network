@@ -1,5 +1,115 @@
 # 📝 CHANGELOG - Bonjour Network
 
+## [2.6.0] - 2025-01-27
+
+### 🍓 **Support Raspberry Pi Amélioré**
+
+#### **Scanner WiFi optimisé pour Raspberry Pi**
+
+- ✨ **RaspberryWifiScanner** : Nouveau scanner spécialement conçu pour Raspberry Pi
+- 🔍 **Multiples méthodes de scan** : `iwlist`, `nmcli`, `iw`, `iwconfig` avec fallback automatique
+- 🛡️ **Gestion d'erreur robuste** : Tentatives multiples avec et sans `sudo`
+- 📡 **Détection d'interface automatique** : Support de `wlan0` et autres interfaces WiFi
+- 🎯 **Parsing intelligent** : Extraction des données SSID, BSSID, canal, sécurité, qualité
+
+#### **Méthodes de scan disponibles**
+
+```javascript
+// Ordre de priorité des méthodes de scan
+1. iwlist scan (classique Linux)
+2. nmcli device wifi list (NetworkManager)
+3. iw dev scan (interface moderne)
+4. iwconfig (interface actuelle)
+```
+
+#### **Correction des erreurs système**
+
+- 🔧 **system_profiler** : Vérification de disponibilité avant utilisation
+- 🔧 **dns-sd** : Gestion gracieuse si non disponible sur Linux
+- 🛡️ **Compatibilité multi-plateforme** : macOS et Linux/Raspberry Pi
+- ⚡ **Performance optimisée** : Timeout et gestion d'erreur appropriés
+
+#### **Scripts de configuration**
+
+- 📦 **Installation automatique** : Scripts pour installer les outils WiFi
+- 🔐 **Configuration des permissions** : `setcap` pour les outils de scan
+- 🧪 **Tests automatisés** : Vérification du fonctionnement des outils
+- 📋 **Documentation** : Guide d'installation et de dépannage
+
+### 🔧 **Améliorations Techniques**
+
+#### **Détection automatique de plateforme**
+
+```javascript
+// Détection automatique macOS vs Linux
+if (platform === 'darwin') {
+    // macOS: WifiSystemProfilerScanner
+} else {
+    // Linux: RaspberryWifiScanner
+}
+```
+
+#### **Gestion d'erreur améliorée**
+
+- ⚠️ **Messages informatifs** : Explications claires des erreurs
+- 🔄 **Fallback gracieux** : Réseau simulé si scan échoue
+- 📊 **Logs détaillés** : Suivi des tentatives de scan
+- 🎯 **Résilience** : Application fonctionne même si scan WiFi échoue
+
+### 📱 **Interface Utilisateur**
+
+#### **Messages d'erreur améliorés**
+
+- 🍓 **Support Raspberry Pi** : Messages spécifiques pour les limitations matérielles
+- 📡 **Scan WiFi limité** : Explication des limitations du scan sur Raspberry Pi
+- 🔧 **Conseils de dépannage** : Suggestions pour améliorer le scan
+- 📊 **Statistiques réalistes** : Affichage des réseaux détectés vs disponibles
+
+### 📁 **Fichiers Créés/Modifiés**
+
+#### **Nouveaux fichiers**
+
+- 🆕 **`server/raspberry-wifi-scanner.js`** : Scanner WiFi optimisé pour Raspberry Pi
+- 🆕 **Scripts de configuration** : Installation et configuration des outils WiFi
+
+#### **Fichiers modifiés**
+
+- 🔧 **`server/index.js`** : Détection automatique de plateforme pour le scan WiFi
+- 🔧 **`server/improved-device-scanner.js`** : Gestion gracieuse de `dns-sd`
+- 🔧 **`server/utils/dns-scanner.js`** : Vérification de disponibilité `dns-sd`
+- 🔧 **`server/device-scanner.js`** : Gestion d'erreur `dns-sd`
+- 🔧 **`server/utils/wifi-system-profiler.js`** : Vérification `system_profiler`
+- 🔧 **`server/real-wifi-scanner.js`** : Gestion `system_profiler`
+- 🔧 **`server/real-no-sudo-scanner.js`** : Vérification `system_profiler`
+- 🔧 **`server/utils/wifi-scanner.js`** : Gestion `system_profiler`
+- 🔧 **`server/utils/wifi-scanner-extended.js`** : Vérification `system_profiler`
+
+### 🚀 **Déploiement**
+
+#### **Installation sur Raspberry Pi**
+
+```bash
+# 1. Installer les outils WiFi
+./setup-wifi-permissions.sh
+
+# 2. Tester le scan WiFi
+sudo iwlist scan
+nmcli device wifi list
+
+# 3. Redémarrer l'application
+npm start
+```
+
+#### **Vérification du fonctionnement**
+
+```bash
+# Test du scanner WiFi
+node test-wifi-scan.js
+
+# Vérification des outils
+which iwlist nmcli iw
+```
+
 ## [2.5.0] - 2025-01-27
 
 ### 🌙 **Mode Sombre/Clair**
