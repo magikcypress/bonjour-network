@@ -822,24 +822,37 @@ async function scanNetworks() {
                 networks = [];
             }
         } else {
-            // Linux (Raspberry Pi): Utiliser node-wifi
+            // Linux (Raspberry Pi): Utiliser RealNoSudoWiFiScanner avec détection automatique
             try {
-                console.log('🐧 Linux détecté - Utilisation de node-wifi...');
-                networks = await wifi.scan();
+                console.log('🐧 Linux détecté - Utilisation de RealNoSudoWiFiScanner...');
+                const RealNoSudoWiFiScanner = require('./real-no-sudo-scanner');
+                const scanner = new RealNoSudoWiFiScanner();
+                networks = await scanner.scanNetworks();
 
                 // Formater les réseaux pour correspondre au format attendu
-                networks = networks.map(network => ({
-                    ssid: network.ssid || 'Réseau caché',
-                    bssid: network.bssid || 'N/A',
-                    mode: network.mode || 'infrastructure',
-                    channel: network.channel || 1,
-                    frequency: network.frequency || 2412,
-                    signal_level: network.signal_level || -70,
-                    signalStrength: network.signalStrength || 30,
-                    quality: network.quality || 30,
-                    security: network.security || 'WPA2',
-                    security_flags: network.security_flags || [network.security || 'WPA2-PSK-CCMP']
-                }));
+                networks = networks
+                    .filter(network => {
+                        // Filtrer les réseaux système et les réseaux avec données incomplètes
+                        const isSystemNetwork = ['awdl0', 'p2p', 'direct'].some(sys =>
+                            network.ssid && network.ssid.toLowerCase().includes(sys)
+                        );
+                        const hasValidData = network.ssid && network.ssid.trim() !== '' &&
+                            network.ssid !== 'N/A' && network.ssid !== 'Unknown';
+
+                        return !isSystemNetwork && hasValidData;
+                    })
+                    .map(network => ({
+                        ssid: network.ssid || 'Réseau caché',
+                        bssid: network.bssid && network.bssid !== 'N/A' ? network.bssid : null,
+                        mode: network.mode || 'infrastructure',
+                        channel: network.channel || 1,
+                        frequency: network.frequency || 2412,
+                        signal_level: network.rssi || network.signal_level || -70,
+                        signalStrength: network.signalStrength !== null && network.signalStrength !== undefined ? network.signalStrength : 30,
+                        quality: network.quality || network.signalStrength || 30,
+                        security: network.security && network.security !== 'Unknown' ? network.security : 'WPA2',
+                        security_flags: [network.security && network.security !== 'Unknown' ? network.security : 'WPA2-PSK-CCMP']
+                    }));
 
                 logger.info(`Scan WiFi Linux: ${networks.length} réseaux détectés`);
             } catch (linuxError) {
