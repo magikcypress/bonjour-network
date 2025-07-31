@@ -211,10 +211,10 @@ app.get('/api/networks', async (req, res) => {
                 const scanner = new WifiSystemProfilerScanner();
                 externalNetworks = await scanner.scanNetworks();
             } else {
-                // Linux (Raspberry Pi): Utiliser RealNoSudoWiFiScanner
-                console.log('🐧 Linux détecté - Utilisation de RealNoSudoWiFiScanner...');
-                const RealNoSudoWiFiScanner = require('./real-no-sudo-scanner');
-                const scanner = new RealNoSudoWiFiScanner();
+                // Linux (Raspberry Pi): Utiliser RaspberryWifiScanner optimisé
+                console.log('🐧 Linux détecté - Utilisation de RaspberryWifiScanner...');
+                const RaspberryWifiScanner = require('./raspberry-wifi-scanner');
+                const scanner = new RaspberryWifiScanner();
                 externalNetworks = await scanner.scanNetworks();
             }
 
