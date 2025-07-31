@@ -198,11 +198,25 @@ app.get('/api/networks', async (req, res) => {
 
         // Scanner les réseaux WiFi extérieurs
         try {
-            const WifiSystemProfilerScanner = require('./utils/wifi-system-profiler');
-            const scanner = new WifiSystemProfilerScanner();
+            // Détecter la plateforme et utiliser le scanner approprié
+            const platform = process.platform;
+            console.log(`🖥️ Plateforme détectée pour scan WiFi: ${platform}`);
 
-            // Scanner les réseaux WiFi extérieurs
-            const externalNetworks = await scanner.scanNetworks();
+            let externalNetworks = [];
+
+            if (platform === 'darwin') {
+                // macOS: Utiliser WifiSystemProfilerScanner
+                console.log('🍎 macOS détecté - Utilisation de WifiSystemProfilerScanner...');
+                const WifiSystemProfilerScanner = require('./utils/wifi-system-profiler');
+                const scanner = new WifiSystemProfilerScanner();
+                externalNetworks = await scanner.scanNetworks();
+            } else {
+                // Linux (Raspberry Pi): Utiliser RealNoSudoWiFiScanner
+                console.log('🐧 Linux détecté - Utilisation de RealNoSudoWiFiScanner...');
+                const RealNoSudoWiFiScanner = require('./real-no-sudo-scanner');
+                const scanner = new RealNoSudoWiFiScanner();
+                externalNetworks = await scanner.scanNetworks();
+            }
 
             if (externalNetworks && externalNetworks.length > 0) {
                 // Formater les réseaux pour correspondre au format attendu

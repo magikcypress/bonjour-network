@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🍓 Installation rapide des outils WiFi pour Raspberry Pi
+# 🍓 Installation rapide des outils WiFi
 
 set -e
 
@@ -30,7 +30,7 @@ print_error() {
 print_header() {
     echo -e "${BLUE}"
     echo "=========================================="
-    echo "🍓 Installation des outils WiFi - Raspberry Pi"
+    echo "🍓 Installation des outils WiFi"
     echo "=========================================="
     echo -e "${NC}"
 }
@@ -122,30 +122,20 @@ test_tools() {
         print_warning "iw non installé"
     fi
     
-    # Test arp-scan
-    if command -v arp-scan &> /dev/null; then
-        total_tests=$((total_tests + 1))
-        if sudo arp-scan --localnet --timeout=1000 | grep -q "Interface"; then
-            print_success "arp-scan fonctionne"
-            tests_passed=$((tests_passed + 1))
-        else
-            print_warning "arp-scan ne fonctionne pas correctement"
-        fi
-    else
-        print_warning "arp-scan non installé"
-    fi
-    
     print_info "Tests: $tests_passed/$total_tests réussis"
 }
 
-# Redémarrage des services réseau
-restart_network_services() {
-    print_info "Redémarrage des services réseau..."
+# Test du scan WiFi
+test_wifi_scan() {
+    print_info "Test du scan WiFi..."
     
-    sudo systemctl restart NetworkManager 2>/dev/null || true
-    sudo systemctl restart wpa_supplicant 2>/dev/null || true
-    
-    print_success "Services réseau redémarrés"
+    # Tester avec Node.js
+    if command -v node &> /dev/null; then
+        print_info "Test avec Node.js..."
+        node test-wifi-scan.js 2>/dev/null || print_warning "Test Node.js échoué"
+    else
+        print_warning "Node.js non installé"
+    fi
 }
 
 # Affichage des informations finales
@@ -165,7 +155,7 @@ show_final_info() {
     echo "   - sudo iwlist scan"
     echo "   - nmcli device wifi list"
     echo "   - sudo iw dev"
-    echo "   - sudo arp-scan --localnet"
+    echo "   - node test-wifi-scan.js"
     echo ""
     echo "🚀 Redémarrez l'application pour tester le scan !"
 }
@@ -175,8 +165,8 @@ main() {
     print_header
     install_wifi_tools
     setup_permissions
-    restart_network_services
     test_tools
+    test_wifi_scan
     show_final_info
 }
 
