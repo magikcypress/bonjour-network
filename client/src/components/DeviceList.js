@@ -318,6 +318,78 @@ function DeviceList({
 
     return (
         <div className="space-y-6">
+            {/* Progression du scan - EN HAUT */}
+            {scanProgress?.isActive && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                    <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                                Progression du scan
+                            </h3>
+                            <span className="text-sm text-gray-600 dark:text-gray-300">
+                                {formatElapsedTime(elapsedTime)}
+                            </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${scanProgress.progress}%` }}
+                            ></div>
+                        </div>
+                    </div>
+
+                    {/* Message de progression */}
+                    {scanProgress.message && (
+                        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                            <div className="flex items-center">
+                                <Loader className="w-4 h-4 animate-spin text-blue-600 mr-2" />
+                                <span className="text-sm text-blue-800 dark:text-blue-200">{scanProgress.message}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Étapes du scan */}
+                    <div className="space-y-3">
+                        {SCAN_STEPS[scanMode].map((step) => {
+                            const status = getStepStatus(step.id);
+                            const isCompleted = status === 'completed';
+                            const isCurrent = status === 'current';
+
+                            return (
+                                <div
+                                    key={step.id}
+                                    className={`flex items-center p-3 rounded-lg ${isCurrent ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700' : ''
+                                        }`}
+                                >
+                                    <div className="mr-3">
+                                        {getStepIcon(step.id, isCompleted, isCurrent)}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="font-medium text-gray-800 dark:text-white">
+                                            {step.name}
+                                        </div>
+                                        <div className="text-sm text-gray-600 dark:text-gray-300">
+                                            {step.description}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Bouton d'annulation */}
+                    <div className="mt-4 flex justify-end">
+                        <button
+                            onClick={handleCancelScan}
+                            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        >
+                            <XCircle className="w-4 h-4 mr-2" />
+                            Annuler le scan
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Contrôles de scan */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -338,15 +410,7 @@ function DeviceList({
                             <Zap className="w-4 h-4 mr-2" />
                             Scan complet
                         </button>
-                        {scanProgress?.isActive && (
-                            <button
-                                onClick={handleCancelScan}
-                                className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            >
-                                <XCircle className="w-4 h-4 mr-2" />
-                                Annuler
-                            </button>
-                        )}
+
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-300">
                         {validatedDevices.length} appareils détectés
@@ -391,66 +455,7 @@ function DeviceList({
                 )}
             </div>
 
-            {/* Progression du scan */}
-            {scanProgress?.isActive && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                                Progression du scan
-                            </h3>
-                            <span className="text-sm text-gray-600 dark:text-gray-300">
-                                {formatElapsedTime(elapsedTime)}
-                            </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${scanProgress.progress}%` }}
-                            ></div>
-                        </div>
-                    </div>
 
-                    {/* Étapes du scan */}
-                    <div className="space-y-3">
-                        {SCAN_STEPS[scanMode].map((step) => {
-                            const status = getStepStatus(step.id);
-                            const isCompleted = status === 'completed';
-                            const isCurrent = status === 'current';
-
-                            return (
-                                <div
-                                    key={step.id}
-                                    className={`flex items-center p-3 rounded-lg ${isCurrent ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700' : ''
-                                        }`}
-                                >
-                                    <div className="mr-3">
-                                        {getStepIcon(step.id, isCompleted, isCurrent)}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="font-medium text-gray-800 dark:text-white">
-                                            {step.name}
-                                        </div>
-                                        <div className="text-sm text-gray-600 dark:text-gray-300">
-                                            {step.description}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {/* Message de progression */}
-                    {scanProgress.message && (
-                        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-                            <div className="flex items-center">
-                                <Loader className="w-4 h-4 animate-spin text-blue-600 mr-2" />
-                                <span className="text-sm text-blue-800 dark:text-blue-200">{scanProgress.message}</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
 
             {/* Message d'erreur */}
             {error && (
