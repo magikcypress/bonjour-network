@@ -1,0 +1,70 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd client && npm ci
+        cd ../server && npm ci
+    
+    - name: Start server
+      run: |
+        cd server
+        npm start &
+        sleep 10
+    
+    - name: Start client
+      run: |
+        cd client
+        npm start &
+        sleep 15
+    
+    - name: Run tests (API only)
+      run: |
+        node tests/test-no-x.js
+    
+    - name: Run tests (headless)
+      run: |
+        node tests/test-headless.js
+    
+    - name: Run accessibility tests
+      run: |
+        node scripts/test-accessibility-simple.js
+    
+    - name: Run all features test (if Xvfb available)
+      run: |
+        if command -v xvfb-run &> /dev/null; then
+          xvfb-run -a -s "-screen 0 1280x720x24" node tests/test-all-features.js
+        else
+          echo "Xvfb not available, skipping GUI tests"
+        fi
+    
+    - name: Check server health
+      run: |
+        curl -f http://localhost:5001/api/health || exit 1
+    
+    - name: Check client health
+      run: |
+        curl -f http://localhost:3000 || exit 1 

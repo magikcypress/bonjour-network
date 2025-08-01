@@ -5,18 +5,27 @@ async function testAllFeatures() {
     console.log('🧪 Test global de toutes les fonctionnalités...');
 
     const browser = await puppeteer.launch({
-        headless: false,
-        defaultViewport: null,
+        headless: true, // Forcer le mode headless pour éviter les problèmes X
+        defaultViewport: { width: 1280, height: 720 },
         args: [
-            '--start-maximized',
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--disable-gpu'
-        ]
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            '--disable-xvfb',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding'
+        ],
+        env: {
+            ...process.env,
+            DISPLAY: ':99' // Variable d'environnement pour X
+        }
     });
 
     try {
