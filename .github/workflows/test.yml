@@ -49,9 +49,15 @@ jobs:
       run: |
         node tests/test-headless.js
     
+    - name: Install test dependencies
+      run: |
+        npm install axios socket.io-client puppeteer
+        cd client && npm install axios socket.io-client
+        cd ../server && npm install axios socket.io-client
+    
     - name: Run accessibility tests
       run: |
-        node scripts/test-accessibility-simple.js
+        node scripts/test-accessibility-system.js
     
     - name: Run all features test (if Xvfb available)
       run: |

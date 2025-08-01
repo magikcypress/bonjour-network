@@ -1,0 +1,62 @@
+name: Accessibility Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  accessibility:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd client && npm ci
+        cd ../server && npm ci
+    
+    - name: Start server
+      run: |
+        cd server
+        npm start &
+        sleep 10
+    
+    - name: Start client
+      run: |
+        cd client
+        npm start &
+        sleep 15
+    
+    - name: Test accessibility (system)
+      run: |
+        node scripts/test-accessibility-system.js
+    
+    - name: Test accessibility (fallback)
+      run: |
+        node scripts/test-accessibility.js
+    
+    - name: Check server health
+      run: |
+        curl -f http://localhost:5001/api/health || exit 1
+    
+    - name: Check client health
+      run: |
+        curl -f http://localhost:3000 || exit 1
+    
+    - name: Test specific pages
+      run: |
+        for page in "/" "/appareils" "/reseaux" "/dns"; do
+          echo "Testing $page..."
+          curl -f "http://localhost:3000$page" || exit 1
+        done 
