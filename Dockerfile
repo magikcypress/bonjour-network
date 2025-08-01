@@ -26,7 +26,7 @@ COPY server/security ./security
 COPY server/middleware ./middleware
 COPY server/config ./config
 COPY server/*.js ./
-COPY server/manufacturers.json ./
+COPY server/data/manufacturers.json ./
 
 # Installer les dépendances
 RUN npm ci --only=production
