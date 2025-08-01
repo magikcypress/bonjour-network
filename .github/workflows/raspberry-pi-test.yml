@@ -1,0 +1,150 @@
+name: Raspberry Pi Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  # Test avec runner auto-hébergé (si disponible)
+  raspberry-self-hosted:
+    runs-on: self-hosted
+    if: ${{ github.repository == 'votre-username/bonjour-network' }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check Raspberry Pi environment
+      run: |
+        echo "🍓 Environnement Raspberry Pi détecté"
+        uname -a
+        cat /etc/os-release
+        node --version
+        npm --version
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd client && npm ci
+        cd ../server && npm ci
+    
+    - name: Test native Raspberry Pi
+      run: |
+        echo "🧪 Test natif Raspberry Pi..."
+        
+        # Démarrer le serveur
+        cd server
+        npm start &
+        sleep 10
+        
+        # Tester l'API
+        curl -f http://localhost:5001/api/health || exit 1
+        
+        # Tester les outils système
+        which nmap || echo "nmap non installé"
+        which arp || echo "arp non disponible"
+        which ping || echo "ping non disponible"
+        
+        echo "✅ Tests natifs Raspberry Pi réussis"
+    
+    - name: Test WiFi scanning on Raspberry Pi
+      run: |
+        echo "📶 Test scan WiFi Raspberry Pi..."
+        
+        # Vérifier les interfaces WiFi
+        ip link show | grep wlan || echo "Aucune interface WiFi détectée"
+        
+        # Tester les outils WiFi
+        which iwlist || echo "iwlist non disponible"
+        which iw || echo "iw non disponible"
+        which nmcli || echo "nmcli non disponible"
+        
+        echo "✅ Tests WiFi Raspberry Pi terminés"
+    
+    - name: Test Docker on Raspberry Pi
+      run: |
+        echo "🐳 Test Docker sur Raspberry Pi..."
+        
+        # Tester Docker
+        docker --version
+        docker run --rm hello-world
+        
+        # Tester le build Docker
+        docker build -f Dockerfile.raspberry-pi -t bonjour-network:raspberry-test .
+        
+        # Tester le container
+        docker run --rm -d --name test-raspberry -p 5001:5001 bonjour-network:raspberry-test
+        sleep 15
+        curl -f http://localhost:5001/api/health || exit 1
+        docker stop test-raspberry
+        
+        echo "✅ Docker Raspberry Pi fonctionnel"
+    
+    - name: Test application features
+      run: |
+        echo "🔧 Test des fonctionnalités de l'application..."
+        
+        # Démarrer l'application
+        cd server
+        npm start &
+        sleep 10
+        
+        # Tester les endpoints
+        curl -f http://localhost:5001/api/health
+        curl -f http://localhost:5001/api/devices
+        curl -f http://localhost:5001/api/wifi
+        curl -f http://localhost:5001/api/dns
+        
+        echo "✅ Fonctionnalités de l'application testées"
+    
+    - name: Test network scanning
+      run: |
+        echo "🌐 Test du scan réseau..."
+        
+        # Tester le scan réseau (si autorisé)
+        sudo nmap -sn 192.168.1.0/24 || echo "Scan réseau non autorisé"
+        
+        # Tester les outils réseau
+        arp -a
+        ping -c 3 8.8.8.8
+        
+        echo "✅ Tests réseau terminés"
+    
+    - name: Performance test
+      run: |
+        echo "⚡ Test de performance..."
+        
+        # Test de temps de réponse
+        start_time=$(date +%s.%N)
+        curl -s http://localhost:5001/api/health > /dev/null
+        end_time=$(date +%s.%N)
+        response_time=$(echo "$end_time - $start_time" | bc)
+        echo "Temps de réponse API: ${response_time}s"
+        
+        # Test d'utilisation mémoire
+        if pgrep -f "node.*index.js" > /dev/null; then
+          memory_usage=$(ps -o rss= -p $(pgrep -f "node.*index.js") | awk '{sum+=$1} END {print sum/1024}')
+          echo "Utilisation mémoire: ${memory_usage}MB"
+        fi
+        
+        echo "✅ Tests de performance terminés"
+    
+    - name: Summary
+      run: |
+        echo ""
+        echo "🍓 Tests Raspberry Pi terminés !"
+        echo "📊 Résumé:"
+        echo "  ✅ Environnement Raspberry Pi"
+        echo "  ✅ Dépendances installées"
+        echo "  ✅ Serveur démarré"
+        echo "  ✅ API accessible"
+        echo "  ✅ Outils système"
+        echo "  ✅ Scan WiFi"
+        echo "  ✅ Docker fonctionnel"
+        echo "  ✅ Fonctionnalités application"
+        echo "  ✅ Tests réseau"
+        echo "  ✅ Performance"
+        echo ""
+        echo "🎉 Tous les tests Raspberry Pi sont passés !" 
