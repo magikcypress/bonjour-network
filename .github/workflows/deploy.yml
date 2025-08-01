@@ -31,11 +31,19 @@ jobs:
     
     - name: Test Docker build
       run: |
+        # Test du build principal
         docker build -t bonjour-network-test .
         docker run --rm -d --name test-container -p 5001:5001 bonjour-network-test
         sleep 10
         curl -f http://localhost:5001/api/health || exit 1
         docker stop test-container
+        
+        # Test du build Raspberry Pi
+        docker build -f Dockerfile.raspberry-pi -t bonjour-network-raspberry-test .
+        docker run --rm -d --name test-raspberry-container -p 5002:5001 bonjour-network-raspberry-test
+        sleep 10
+        curl -f http://localhost:5002/api/health || exit 1
+        docker stop test-raspberry-container
     
     - name: Test Docker Compose
       run: |
