@@ -1,8 +1,10 @@
+const path = require('path');
+
 module.exports = {
     apps: [
         {
             name: 'bonjour-backend',
-            cwd: './server',
+            cwd: path.join(__dirname, 'server'),
             script: 'index.js',
             env: {
                 NODE_ENV: 'production',
@@ -13,13 +15,13 @@ module.exports = {
             autorestart: true,
             watch: false,
             max_memory_restart: '512M',
-            log_file: './logs/backend.log',
-            error_file: './logs/backend-error.log',
-            out_file: './logs/backend-out.log'
+            log_file: path.join(__dirname, 'logs', 'backend.log'),
+            error_file: path.join(__dirname, 'logs', 'backend-error.log'),
+            out_file: path.join(__dirname, 'logs', 'backend-out.log')
         },
         {
             name: 'bonjour-frontend',
-            cwd: './client',
+            cwd: path.join(__dirname, 'client'),
             script: 'npm',
             args: 'start',
             env: {
@@ -30,9 +32,9 @@ module.exports = {
             autorestart: true,
             watch: false,
             max_memory_restart: '512M',
-            log_file: './logs/frontend.log',
-            error_file: './logs/frontend-error.log',
-            out_file: './logs/frontend-out.log'
+            log_file: path.join(__dirname, 'logs', 'frontend.log'),
+            error_file: path.join(__dirname, 'logs', 'frontend-error.log'),
+            out_file: path.join(__dirname, 'logs', 'frontend-out.log')
         }
     ]
 }; 
